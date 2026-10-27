@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Human Respiratory System – A 3D Journey</title>
+<meta name="description" content="Interactive 3D respiratory system and breathing for Classes 5–6. Developed by Mateen Yousuf, Teacher.">
+<meta name="theme-color" content="#050d1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Breathing">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --navy:#050d1f; --navy2:#0b2a52; --panel:rgba(5,16,38,.94); --line:rgba(120,200,255,.28);
+  --sky:#5cc8ff; --teal:#19c3d6; --sun:#35d4ff; --leaf:#46e08f; --ink:#ffffff; --muted:#a9c8e6; --warn:#ff8a7a; --red:#ff4d5e; --blue:#3b82ff;
+  --r:16px; --safe-b:env(safe-area-inset-bottom,0px);
+  --font:"Avenir Next","Segoe UI","Trebuchet MS",Roboto,system-ui,-apple-system,sans-serif;
+  --navh:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#050d1f;color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.45}
+body.no3d{background:radial-gradient(circle at 50% 40%,#0b3a66,#050d1f 70%)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;transform:translate(-50%,-120%);pointer-events:auto;white-space:nowrap;background:rgba(5,16,38,.85);color:#fff;border:1px solid rgba(120,200,255,.5);
+  border-radius:99px;padding:3px 11px;font-size:13px;font-weight:700;letter-spacing:.2px;cursor:pointer;will-change:transform;display:none}
+.lbl.you{background:var(--sun);color:#04203a;border-color:#fff;font-size:14px;z-index:3}
+.lbl.hs{background:#fff;color:#04203a;border:2px solid var(--sun);width:30px;height:30px;padding:0;border-radius:50%;text-align:center;line-height:26px;font-size:15px;transform:translate(-50%,-50%)}
+.lbl.hs::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--sun);animation:ping 1.8s infinite}
+@keyframes ping{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+.glass{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+
+/* ---------- loader ---------- */
+#loader{position:fixed;inset:0;z-index:80;background:radial-gradient(circle at 50% 40%,#0b3a66,#050d1f 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .6s}
+#loader .drop{font-size:64px;animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-12px)}}
+#loader.hide{opacity:0;pointer-events:none}
+
+/* ---------- title ---------- */
+#title{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:clamp(12px,4.5vh,48px) 18px calc(24px + var(--safe-b));
+  background:radial-gradient(ellipse at 50% 42%,rgba(2,8,22,.55) 0%,rgba(2,8,22,.3) 45%,rgba(2,8,22,.0) 75%),linear-gradient(rgba(2,8,22,.45),rgba(2,8,22,0) 30%,rgba(2,8,22,0) 62%,rgba(2,8,22,.7));
+  transition:opacity .9s,transform .9s}
+#title.gone{opacity:0;pointer-events:none;transform:scale(1.06)}
+#title h1{margin:0;font-size:clamp(30px,6.4vw,84px);line-height:1;font-weight:900;letter-spacing:2px;text-transform:uppercase;
+  background:linear-gradient(#ffffff 25%,#8fe9ff 70%,#35a6ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 rgba(0,40,110,.65)) drop-shadow(0 0 28px rgba(40,190,255,.55))}
+#title h2{margin:.5em 0 0;font-size:clamp(20px,3.6vw,40px);font-weight:700;color:#8fe9ff;text-shadow:0 2px 10px rgba(0,10,30,.9)}
+#title p.sup{max-width:720px;margin:.9em auto 0;font-size:clamp(16px,2.2vw,22px);color:#fff;text-shadow:0 2px 8px rgba(0,20,50,.95)}
+#title .cred{margin-top:1.1em;font-size:clamp(17px,2.4vw,24px);font-weight:800;letter-spacing:.6px;color:#fff;background:rgba(5,16,38,.7);border:1px solid rgba(120,200,255,.5);padding:8px 22px;border-radius:99px}
+#title .cred small{display:block;font-weight:600;font-size:.72em;color:#8fe9ff;letter-spacing:2px;text-transform:uppercase}
+.start{margin-top:1.3em;font-size:clamp(18px,2.4vw,26px);font-weight:900;letter-spacing:1.4px;padding:16px 38px;border-radius:99px;border:3px solid #fff;
+  background:linear-gradient(#7cecff,#22a8f0);color:#04203a;box-shadow:0 8px 0 #0a6aa8,0 0 34px rgba(40,200,255,.5);animation:pulse 2.2s ease-in-out infinite}
+.start:active{transform:translateY(4px);box-shadow:0 4px 0 #0a6aa8}
+@keyframes pulse{50%{transform:scale(1.045)}}
+#title .tag{margin-top:1.2em;font-size:15px;color:#d6efff;font-style:italic;text-shadow:0 2px 8px rgba(0,20,50,.95)}
+
+/* ---------- top bar ---------- */
+#top{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;pointer-events:none}
+#top>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border-radius:99px;font-weight:900;letter-spacing:.4px;font-size:16px}
+.brand span.i{font-size:22px}
+.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.tb{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;font-size:19px;padding:0}
+.tb:hover{background:var(--navy2)} .tb.on{background:var(--sun);color:#04203a}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:0 12px;height:36px;border-radius:99px;background:var(--panel);border:1px solid var(--line);font-size:13px;font-weight:700}
+.chip i{width:9px;height:9px;border-radius:50%;background:#5fd08a;display:inline-block}
+.chip.off i{background:var(--warn)}
+#installBtn{display:none;height:44px;padding:0 16px;border-radius:99px;border:2px solid #fff;background:var(--sun);color:#04203a;font-weight:900}
+#backBtn{display:none;height:44px;padding:0 16px;border-radius:99px;border:2px solid #fff;background:var(--sun);color:#04203a;font-weight:900;margin-left:8px}
+#settings{position:fixed;right:10px;top:calc(62px + env(safe-area-inset-top,0px));z-index:25;width:min(300px,92vw);padding:14px;display:none}
+#settings.open{display:block}
+#settings label{display:block;font-weight:700;margin:10px 0 4px;font-size:15px}
+#settings input[type=range]{width:100%}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:9px 6px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-weight:700}
+.seg button.on{background:var(--sun);color:#04203a;border-color:#fff}
+
+/* ---------- info panel ---------- */
+#panel{position:fixed;right:12px;top:calc(66px + env(safe-area-inset-top,0px));z-index:15;width:min(410px,40vw);max-height:calc(100vh - 66px - var(--navh) - 20px - var(--safe-b) - var(--stageh,0px));overflow:auto;padding:16px 18px 18px;display:none;scrollbar-width:thin}
+#panel.show{display:block}
+#panel h3{margin:0 0 4px;font-size:22px;line-height:1.2}
+#panel .kick{font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--sun);margin-bottom:4px}
+#panel p{margin:.5em 0}
+#panel ul{margin:.4em 0;padding-left:1.15em}#panel li{margin:.25em 0}
+.box{margin:.7em 0;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.09);border-left:4px solid var(--teal);font-size:15.5px}
+.box.an{border-color:var(--sun)} .box.nt{border-color:var(--warn);font-size:14.5px;color:#ffe3d4} .box.fact{border-color:var(--leaf)}
+.box>b:first-child{color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.1);font-weight:800;font-size:15px}
+.btn:hover{background:rgba(255,255,255,.2)}
+.btn.pri{background:linear-gradient(#7cecff,#22a8f0);color:#04203a;border-color:#fff}
+.btn.on{background:var(--sun);color:#04203a;border-color:#fff}
+.btn.sm{min-height:38px;padding:5px 12px;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:.6em 0}
+.ctl{margin:.7em 0}.ctl label{display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-bottom:3px}
+input[type=range]{width:100%;accent-color:var(--sun);height:28px}
+.bar{height:18px;border-radius:9px;background:rgba(255,255,255,.14);overflow:hidden;margin:3px 0 8px}
+.bar>i{display:block;height:100%;width:0;border-radius:9px;transition:width .25s}
+.bl{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
+.sheet-handle{display:none}
+
+/* ---------- stage bar ---------- */
+#stagebar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--navh) + 12px + var(--safe-b));z-index:16;width:min(920px,calc(100vw - 20px));padding:10px 12px;display:none}
+#stagebar.show{display:block}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.sc{flex:0 0 auto;min-width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-weight:800;font-size:15px;padding:0 10px;display:flex;align-items:center;gap:6px}
+.sc.on{background:var(--sun);color:#04203a;border-color:#fff}
+.sc.done{background:rgba(95,208,138,.28)}
+.sc .n{font-size:12px;opacity:.85}
+.sctl{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:2px}
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.18);margin:2px 0 8px;overflow:hidden}.prog>i{display:block;height:100%;width:0;background:var(--sun)}
+
+/* ---------- nav ---------- */
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:6px;justify-content:flex-start;padding:6px 8px calc(6px + var(--safe-b));background:linear-gradient(rgba(5,16,38,0),rgba(5,16,38,.96) 35%);overflow-x:auto;scrollbar-width:none}
+#nav::-webkit-scrollbar{display:none}
+.nb:first-child{margin-left:auto}.nb:last-child{margin-right:auto}
+.pmin{display:none;position:absolute;right:8px;top:8px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.12);font-size:16px;padding:0}
+#panel.min>*:not(.pmin):not(.kick):not(h3){display:none}
+#panel.min{max-height:none!important;padding-bottom:10px}
+.nb{flex:0 0 auto;min-width:72px;height:54px;border-radius:14px;border:1px solid var(--line);background:rgba(5,16,38,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;gap:0;padding:2px 8px;line-height:1.15}
+.nb span.i{font-size:20px}
+.nb.on{background:var(--sun);color:#04203a;border-color:#fff}
+.nb:hover{background:var(--navy2)}.nb.on:hover{background:var(--sun)}
+
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(2,18,36,.72);padding:10px}
+#modal.open{display:flex}
+.sheet{width:min(1020px,100%);max-height:calc(100vh - 20px);display:flex;flex-direction:column;background:linear-gradient(#0a2a50,#050d1f);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+.sheet header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.sheet header h2{margin:0;font-size:22px;flex:1}
+.sheet .body{padding:14px 18px 20px;overflow:auto;flex:1 1 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-weight:800;min-height:42px}
+.tabs button.on{background:var(--sun);color:#04203a;border-color:#fff}
+.cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+canvas.lab{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);background:#0c4a78;display:block;touch-action:manipulation}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{padding:14px;border-radius:14px;background:rgba(255,255,255,.09);border:1px solid var(--line);text-align:left}
+.card h4{margin:0 0 4px;font-size:18px}
+.card.click{cursor:pointer}.card.click:hover{background:rgba(255,255,255,.17)}
+.opt{display:block;width:100%;text-align:left;margin:7px 0;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.08);font-weight:700;font-size:16.5px;min-height:48px}
+.opt:hover{background:rgba(255,255,255,.17)}
+.opt.ok{border-color:var(--leaf);background:rgba(95,208,138,.28)}
+.opt.no{border-color:var(--warn);background:rgba(255,157,108,.2)}
+.opt[disabled]{cursor:default;opacity:.95}
+.fb{margin:10px 0;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.1);border-left:5px solid var(--teal);font-size:16px}
+.fb.ok{border-color:var(--leaf)}.fb.no{border-color:var(--warn)}
+.big{font-size:44px;font-weight:900}
+.pill{display:inline-block;padding:3px 12px;border-radius:99px;background:rgba(255,255,255,.14);font-weight:800;font-size:14px}
+.qa{margin-top:8px}.qa summary{cursor:pointer;font-weight:800;color:var(--sun);min-height:32px}
+.lh{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seq{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.seq .tag{padding:6px 12px;border-radius:99px;background:var(--leaf);color:#04203a;font-weight:900}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--navh) + 20px + var(--safe-b));transform:translate(-50%,30px);z-index:70;max-width:min(560px,92vw);padding:12px 18px;border-radius:14px;background:#fff;color:#04203a;font-weight:700;opacity:0;pointer-events:none;transition:.3s;display:flex;gap:12px;align-items:center}
+#toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#toast button{border:0;background:var(--navy);color:#fff;padding:7px 14px;border-radius:99px;font-weight:800}
+
+/* presentation mode */
+body.present #nav,body.present .tools .hide-p,body.present #top .brand,body.present #backBtn{display:none!important}
+body.present #panel{font-size:1.18em;width:min(520px,44vw)}
+body.present #stagebar .sctl .btn.opt-p{display:none}
+#exitP{display:none;position:fixed;left:10px;top:10px;z-index:60}
+body.present #exitP{display:inline-flex}
+
+body.is-title #nav,body.is-title #panel,body.is-title #stagebar{visibility:hidden}
+.sr{position:absolute;left:-9999px}
+#nowebgl{display:none}
+
+/* ---------- small screens ---------- */
+@media (max-width:860px){
+  :root{--navh:60px}
+  .tb.hide-m{display:none}.tools{flex-wrap:nowrap;gap:4px}.chip{padding:0 10px}.chip:not(.off) span{display:none}
+  #backBtn{padding:0 12px;white-space:nowrap;font-size:14px;margin-left:0}body.has-back .brand{display:none}
+  .pmin{display:grid;place-items:center}#panel h3{padding-right:40px}
+  .sctl .btn{padding:4px 10px;font-size:13px;min-height:38px}
+  #panel{left:8px;right:8px;width:auto;top:auto;bottom:calc(var(--navh) + 6px + var(--safe-b) + var(--stageh,0px));max-height:min(42vh,calc(100vh - 220px - var(--stageh,0px)));padding:12px 14px 14px}
+  #panel h3{font-size:19px}
+  .brand b{display:none}.brand{padding:4px 6px}
+  .tb{width:38px;height:38px;font-size:16px}
+  .tools{gap:4px}
+  .cols{grid-template-columns:1fr}
+  .sheet header h2{font-size:18px}
+  .nb{min-width:64px;height:50px;font-size:11.5px}
+  #stagebar{padding:8px 8px}
+  body.present #panel{width:auto}
+}
+@media (max-height:520px) and (orientation:landscape){
+  #panel{max-height:calc(100vh - 140px - var(--stageh,0px));width:min(380px,44vw);left:auto;right:8px;top:56px;bottom:auto}
+  #title h1{font-size:clamp(34px,9vh,80px)}
+  #title p.sup{display:none}
+  .start{margin-top:.6em;padding:10px 26px}
+}
+@media (prefers-reduced-motion:reduce){.start,.lbl.hs::after,#loader .drop{animation:none}}
+noscript{position:fixed;inset:0;z-index:99;background:#06304f;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:20px}
+
+.rt{width:100%;border-collapse:collapse;font-size:14px;margin:.5em 0}.rt th,.rt td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.14);text-align:left}.rt tr[data-act]{cursor:pointer}.rt tr.cur{background:rgba(53,212,255,.2)}
+canvas.lab{width:100%;max-width:640px;border-radius:12px;border:1px solid var(--line);display:block;margin:6px auto}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}@media(max-width:640px){.cols3{grid-template-columns:1fr}}
+.nb{max-width:104px;text-align:center}
+input[type=range]{accent-color:#35d4ff}
+@media (min-width:900px) and (orientation:landscape){#title{align-items:flex-start;text-align:left;padding-left:5vw;max-width:56vw}#title h1{font-size:clamp(30px,4.6vw,76px)}#title p.sup{margin-left:0}}
+</style>
+</head>
+<body>
+<noscript>This app needs JavaScript. Please enable JavaScript in your browser.</noscript>
+<canvas id="gl" tabindex="0" aria-label="3D human respiratory system, lungs and airways. Drag to rotate, scroll or pinch to zoom, tap parts to learn about them."></canvas>
+<div id="labels" aria-hidden="false"></div>
+
+<div id="loader" role="status"><div class="drop">🫁</div><b style="font-size:20px">Loading The Human Respiratory System…</b><span id="loadmsg" style="color:#a9c8e6">Preparing the 3D lungs</span></div>
+
+<section id="title" aria-label="Title page">
+  <h1>The Human<br>Respiratory System</h1>
+  <h2>A 3D Journey Inside Your Lungs</h2>
+  <p class="sup">Discover how you breathe, how your lungs exchange gases, and how every breath helps supply oxygen to your body.</p>
+  <div class="cred"><small>Developed by</small>Mateen Yousuf — Teacher</div>
+  <button class="start" id="startBtn">START EXPLORATION ▶</button>
+  <div class="tag">Follow one breath of air all the way to your blood.</div>
+</section>
+
+<div id="top">
+  <div style="display:flex;align-items:center">
+    <div class="brand glass"><span class="i">🫁</span><b>The Respiratory System</b></div>
+    <button id="backBtn" aria-label="Return to the home page">← Home</button>
+  </div>
+  <div class="tools">
+    <span class="chip" id="netChip" role="status" aria-live="polite"><i></i><span>Online</span></span>
+    <button id="installBtn" aria-label="Install this app">⬇ Install App</button>
+    <button class="tb" id="pauseBtn" aria-label="Pause animation" title="Pause / resume (Space)">⏸</button>
+    <button class="tb" id="resetCam" aria-label="Reset camera" title="Reset camera">⌖</button>
+    <button class="tb hide-p hide-m" id="zoomIn" aria-label="Zoom in" title="Zoom in">＋</button>
+    <button class="tb hide-p hide-m" id="zoomOut" aria-label="Zoom out" title="Zoom out">－</button>
+    <button class="tb" id="lblBtn" aria-label="Show or hide labels" title="Labels">🏷</button>
+    <button class="tb" id="setBtn" aria-label="Settings" title="Settings">⚙</button>
+    <button class="tb" id="presBtn" aria-label="Presentation mode" title="Presentation mode">📽</button>
+  </div>
+</div>
+<button class="btn pri" id="exitP" aria-label="Exit presentation mode">✕ Exit presentation</button>
+
+<div id="settings" class="glass" role="dialog" aria-label="Settings">
+  <label for="spd">Animation speed: <span id="spdv">1×</span></label>
+  <input type="range" id="spd" min="0.4" max="2.4" step="0.1" value="1">
+  <label>Graphics</label>
+  <div class="seg" id="gfxSeg"><button data-g="high">High</button><button data-g="low">Low (faster)</button></div>
+  <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Low graphics uses fewer particles and a lower resolution. Good for older phones.</p>
+</div>
+
+<aside id="panel" class="glass" aria-live="polite"></aside>
+<div id="stagebar" class="glass"></div>
+<nav id="nav" aria-label="Main navigation"></nav>
+<div id="modal" role="dialog" aria-modal="true"></div>
+<div id="toast" role="status"></div>
+
+<script src="three.min.js"></script>
+<script>
+
+/* =====================================================================
+   THE HUMAN RESPIRATORY SYSTEM — Developed by Mateen Yousuf, Teacher
+   ===================================================================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const wrapPi = a => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = mulberry(4242);
+const shuffle = (arr, r) => { const a = arr.slice(); const R = r || Math.random; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+/* safe storage (may throw in private windows) */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('rs_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('rs_' + k, JSON.stringify(v)); } catch (e) { } }
+};
+
+/* shared state */
+const W = { mode: 'title', speed: 1, paused: false, labels: true, gfx: 'high', present: false, modalOpen: false };
+const NO3D = { v: false };
+
+function toast(msg, btn, cb, ms) {
+  const t = $('#toast'); t.innerHTML = '<span></span>';
+  t.firstChild.textContent = msg;
+  if (btn) { const b = document.createElement('button'); b.textContent = btn; b.onclick = () => { t.classList.remove('show'); cb && cb(); }; t.appendChild(b); }
+  t.classList.add('show'); clearTimeout(toast._t);
+  if (ms !== 0) toast._t = setTimeout(() => t.classList.remove('show'), ms || 3200);
+}
+
+/* =====================================================================
+   ENGINE: renderer, camera, labels with leader lines, picking, helpers
+   ===================================================================== */
+let renderer, scene, camera, clock, T = 0, bgPts;
+const RED = 0xff4d5e, BLUE = 0x3b82ff, CYAN = 0x35d4ff;
+const CLIP = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.55);
+const PICK = [];            /* meshes the student can tap */
+const M = {};
+
+function glowTex(c1, c2) {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, c1 || 'rgba(255,255,255,1)'); gr.addColorStop(.35, c2 || 'rgba(120,220,255,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+const GLOW = {};
+function glowMat(col) { if (!GLOW[col]) { const c = new THREE.Color(col); const a = `rgba(${c.r * 255 | 0},${c.g * 255 | 0},${c.b * 255 | 0},`; GLOW[col] = new THREE.SpriteMaterial({ map: glowTex(a + '1)', a + '.45)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }); } return GLOW[col]; }
+function textSprite(txt, col, scale, bg) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d');
+  if (bg) { g.fillStyle = bg; g.beginPath(); g.roundRect ? g.roundRect(6, 6, 500, 84, 30) : g.rect(6, 6, 500, 84); g.fill(); }
+  g.fillStyle = col || '#fff'; g.font = '800 46px system-ui,Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 52);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false })); s.scale.set(scale * 5.33, scale, 1); s.renderOrder = 12; return s;
+}
+function initMats() {
+  const S = (c, m, r, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, metalness: m, roughness: r }, o || {}));
+  M.muscle = c => S(c || 0xd9566a, .05, .55); M.steel = S(0xdfe7f1, .4, .35); M.valve = S(0xffe9b8, .1, .5, { side: THREE.DoubleSide, emissive: 0x332200 });
+  M.dark = S(0x1a2540, .3, .6); M.cyan = new THREE.MeshBasicMaterial({ color: CYAN });
+}
+const RIM_VS = 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }';
+const RIM_FS = 'precision highp float; varying vec3 vN; varying vec3 vV; uniform vec3 uC; uniform float uA; void main(){ float f=1.-abs(dot(normalize(vN),normalize(vV))); float a=(pow(f,2.2)*.75+.035)*uA; gl_FragColor=vec4(uC,a); }';
+function rimMat(col, a) { return new THREE.ShaderMaterial({ vertexShader: RIM_VS, fragmentShader: RIM_FS, transparent: true, depthWrite: false, uniforms: { uC: { value: new THREE.Color(col) }, uA: { value: a || 1 } } }); }
+
+/* ---------- flow arrows (cones travelling along a curve) ---------- */
+class Flow {
+  constructor(curve, n, col, size, speed) {
+    this.c = curve; this.n = n; this.speed = speed || .12; this.t = Math.random(); this.vis = true;
+    const g = new THREE.ConeGeometry(.2 * (size || 1), .6 * (size || 1), 8); g.rotateX(Math.PI / 2);   /* tip along +z */
+    this.m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .95, depthTest: false }), n); this.m.renderOrder = 9; this.m.frustumCulled = false;
+    this.d = new THREE.Object3D(); this.up = new THREE.Vector3(0, 1, 0); this.tmp = new THREE.Vector3(); this.tmp2 = new THREE.Vector3();
+  }
+  update(dt) {
+    this.t = (this.t + dt * this.speed) % 1; const d = this.d;
+    for (let i = 0; i < this.n; i++) { const u = (this.t + i / this.n) % 1; this.c.getPointAt(u, this.tmp); this.c.getTangentAt(u, this.tmp2); d.position.copy(this.tmp); d.lookAt(this.tmp.clone().add(this.tmp2)); d.updateMatrix(); this.m.setMatrixAt(i, d.matrix); }
+    this.m.instanceMatrix.needsUpdate = true;
+  }
+  setColor(c) { this.m.material.color.set(c); }
+}
+
+/* ---------- camera ---------- */
+const CAM = { t: null, d: 30, yaw: 0, pitch: .3, g: null, f: 1, auto: false, preset: null, follow: null, min: 4, max: 120 };
+function camGo(p, instant) {
+  CAM.g.t.set(p.t[0], p.t[1], p.t[2]); CAM.g.d = p.d; CAM.g.yaw = p.yaw; CAM.g.pitch = p.pitch; CAM.preset = p; CAM.follow = null;
+  if (instant) { CAM.t.copy(CAM.g.t); CAM.d = p.d; CAM.yaw = p.yaw; CAM.pitch = p.pitch; }
+}
+function camUpdate(dt) {
+  if (CAM.follow) CAM.g.t.copy(CAM.follow());
+  if (CAM.auto) { CAM.g.yaw = .5 * Math.sin(performance.now() / 1000 * .14); CAM.g.pitch = .15 + .06 * Math.sin(performance.now() / 1000 * .1); }
+  const k = 1 - Math.exp(-dt * 3.2);
+  CAM.t.lerp(CAM.g.t, k); CAM.d += (CAM.g.d - CAM.d) * k; CAM.yaw += (CAM.g.yaw - CAM.yaw) * k; CAM.pitch += (CAM.g.pitch - CAM.pitch) * k;
+  const cp = Math.cos(CAM.pitch), D = CAM.d * CAM.f;
+  camera.position.set(CAM.t.x + D * Math.sin(CAM.yaw) * cp, CAM.t.y + D * Math.sin(CAM.pitch), CAM.t.z + D * Math.cos(CAM.yaw) * cp); camera.lookAt(CAM.t);
+}
+const _ray = new THREE.Raycaster(), _v2 = new THREE.Vector2();
+function pickAt(cx, cy) {
+  _v2.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); _ray.setFromCamera(_v2, camera);
+  const vis = PICK.filter(m => { let o = m; while (o) { if (!o.visible) return false; o = o.parent; } return true; });
+  const hit = _ray.intersectObjects(vis, false); return hit.length ? hit[0].object : null;
+}
+function initCamera() {
+  const cv = $('#gl'), ptrs = new Map(); let last = 0, moved = 0, downAt = 0;
+  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; downAt = performance.now(); CAM.auto = false; if (ptrs.size === 2) { const a = [...ptrs.values()]; last = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); } });
+  cv.addEventListener('pointermove', e => {
+    const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    if (ptrs.size === 1) { CAM.follow = CAM.follow && Stage.keepFollow ? CAM.follow : null; CAM.g.yaw -= dx * .0065; CAM.g.pitch = clamp(CAM.g.pitch + dy * .0055, -.6, 1.5); CAM.yaw = CAM.g.yaw; CAM.pitch = CAM.g.pitch; }
+    else if (ptrs.size === 2) { const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); if (last) { CAM.g.d = clamp(CAM.g.d * last / d, CAM.min, CAM.max); CAM.d = CAM.g.d; } last = d; }
+  });
+  const up = e => { ptrs.delete(e.pointerId); last = 0; if (ptrs.size === 0 && moved < 8 && performance.now() - downAt < 450) onTap(e.clientX, e.clientY); };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); last = 0; });
+  cv.addEventListener('wheel', e => { e.preventDefault(); CAM.g.d = clamp(CAM.g.d * Math.exp(e.deltaY * .0012), CAM.min, CAM.max); }, { passive: false });
+  cv.addEventListener('keydown', e => {
+    const k = e.key; let h = true;
+    if (k === 'ArrowLeft') CAM.g.yaw += .12; else if (k === 'ArrowRight') CAM.g.yaw -= .12; else if (k === 'ArrowUp') CAM.g.pitch = clamp(CAM.g.pitch - .08, -.6, 1.5); else if (k === 'ArrowDown') CAM.g.pitch = clamp(CAM.g.pitch + .08, -.6, 1.5);
+    else if (k === '+' || k === '=') CAM.g.d = clamp(CAM.g.d * .85, CAM.min, CAM.max); else if (k === '-') CAM.g.d = clamp(CAM.g.d * 1.18, CAM.min, CAM.max); else h = false;
+    if (h) { e.preventDefault(); CAM.auto = false; }
+  });
+}
+function zoomBy(f) { CAM.g.d = clamp(CAM.g.d * f, CAM.min, CAM.max); CAM.auto = false; }
+function onTap(x, y) { const m = pickAt(x, y); if (Stage.cur && Stage.cur.tap) Stage.cur.tap(m ? m.userData.pid : null, m); }
+
+/* ---------- labels with 3D leader lines ---------- */
+const LBL = { list: [], byId: {} };
+let leadG;
+function addLabel(id, text, anchor, off, modes, opt) {
+  opt = opt || {}; const el = document.createElement('button'); el.className = 'lbl' + (opt.cls ? ' ' + opt.cls : ''); el.textContent = text; el.setAttribute('aria-label', opt.aria || text); el.tabIndex = -1;
+  el.addEventListener('click', e => { e.stopPropagation(); if (opt.click) opt.click(); else if (Stage.cur && Stage.cur.tap && opt.pid) Stage.cur.tap(opt.pid); });
+  $('#labels').appendChild(el);
+  const a = new THREE.Vector3(...anchor), p = a.clone().add(new THREE.Vector3(...(off || [0, 0, 0])));
+  let line = null; if (off) { const g = new THREE.BufferGeometry().setFromPoints([a, p]); line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xbfeaff, transparent: true, opacity: .7, depthTest: false })); line.renderOrder = 8; leadG.add(line); }
+  const L = { id, el, pos: p, line, modes, v: new THREE.Vector3(), on: true, always: !!opt.always, key: opt.key || null }; LBL.list.push(L); LBL.byId[id] = L; return L;
+}
+function updateLabels() {
+  const g = W.mode, w = innerWidth, h = innerHeight;
+  for (const L of LBL.list) {
+    const show = L.on && L.modes.includes(g) && (W.labels || L.always) && (!L.key || (Stage.cur && Stage.cur.labelOn ? Stage.cur.labelOn(L.key) : true));
+    if (L.line) L.line.visible = !!show;
+    if (!show) { if (L.shown) { L.el.style.display = 'none'; L.shown = false; } continue; }
+    L.v.copy(typeof L.pos === 'function' ? L.pos() : L.pos).project(camera);
+    if (L.v.z > 1 || Math.abs(L.v.x) > 1.1 || Math.abs(L.v.y) > 1.1) { if (L.shown) { L.el.style.display = 'none'; L.shown = false; } if (L.line) L.line.visible = false; continue; }
+    if (!L.shown) { L.el.style.display = 'block'; L.shown = true; }
+    L.el.style.transform = `translate(${((L.v.x * .5 + .5) * w).toFixed(1)}px,${((-L.v.y * .5 + .5) * h).toFixed(1)}px) translate(-50%,-50%)`;
+  }
+}
+
+/* ---------- renderer / scene ---------- */
+function resize() {
+  if (!renderer) return;
+  const w = innerWidth, h = innerHeight, pr = W.gfx === 'low' ? Math.min(devicePixelRatio || 1, 1.15) : Math.min(devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(pr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = 42; CAM.f = clamp(1.3 / (w / h), 1, 2.3); camera.updateProjectionMatrix(); applyViewOffset();
+}
+function applyViewOffset() {
+  if (!camera) return; const w = innerWidth, h = innerHeight, P = typeof UI !== 'undefined' && UI.panel, show = P && P.classList.contains('show') && !W.present;
+  let sx = 0, sy = 0;
+  if (show) { const r = P.getBoundingClientRect(); if (r.left > w * .35) sx = (w - r.left) / 2; else sy = clamp((h - r.top) * .5, 0, h * .36); }
+  if (W.mode === 'title') { if (w / h > 1.25 && w >= 900) sx = -w * .2; else sy = -h * .14; }
+  if (sx || sy) camera.setViewOffset(w, h, sx, sy, w, h); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+function initWorld() {
+  const cv = $('#gl');
+  renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' }); renderer.setClearColor(0x050d1f, 1); renderer.localClippingEnabled = true;
+  scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050d1f, .006);
+  camera = new THREE.PerspectiveCamera(42, 1, .1, 500); clock = new THREE.Clock(); CAM.t = new THREE.Vector3(); CAM.g = { t: new THREE.Vector3() };
+  initMats();
+  scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x3a2040, .75)); scene.add(new THREE.AmbientLight(0xa0b4e0, .5));
+  const dl = new THREE.DirectionalLight(0xffffff, .95); dl.position.set(8, 14, 16); scene.add(dl); const pl = new THREE.PointLight(0x35b8ff, .8, 120); pl.position.set(-14, 8, -10); scene.add(pl); const pl2 = new THREE.PointLight(0xff4d5e, .5, 100); pl2.position.set(14, -6, 12); scene.add(pl2);
+  leadG = new THREE.Group(); scene.add(leadG);
+  const N = 300, bp = new Float32Array(N * 3); for (let i = 0; i < N; i++) { const r = 45 + rnd() * 70, a = rnd() * 6.283, y = (rnd() - .5) * 90; bp[i * 3] = Math.cos(a) * r; bp[i * 3 + 1] = y; bp[i * 3 + 2] = Math.sin(a) * r; }
+  const bgG = new THREE.BufferGeometry(); bgG.setAttribute('position', new THREE.BufferAttribute(bp, 3)); bgPts = new THREE.Points(bgG, new THREE.PointsMaterial({ size: 1.4, map: glowTex('rgba(160,230,255,1)', 'rgba(60,160,255,.4)'), transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false })); scene.add(bgPts);
+  initCamera(); window.addEventListener('resize', resize); resize();
+}
+
+/* =====================================================================
+   RESPIRATORY BODY MODEL: torso, airways, lungs, ribs, diaphragm, airflow
+   ===================================================================== */
+const PARTS = {
+  nose: { n: 'Nose and nasal cavity', k: 'air', t: 'Air can enter through the <b>nose</b>. Inside the nasal cavity, tiny hairs and sticky <b>mucus</b> trap dust, and the air is <b>warmed and moistened</b> before it travels on.', job: 'Filters, warms and moistens air' },
+  mouth: { n: 'Mouth', k: 'air', t: 'Air can also enter through the <b>mouth</b>, for example when you breathe hard during running. Air from the mouth is not filtered as well as air from the nose.', job: 'A second pathway for air' },
+  pharynx: { n: 'Pharynx (throat)', k: 'air', t: 'The <b>pharynx</b> is the throat. Air from the nose and from the mouth meet here. Food and drink also pass through the pharynx, but they go to the food pipe, not to the lungs.', job: 'Shared passage for air and food' },
+  larynx: { n: 'Larynx (voice box)', k: 'air', t: 'The <b>larynx</b> sits at the top of the trachea. It holds the <b>vocal cords</b>, which vibrate to make sound. A flap called the <b>epiglottis</b> covers it when you swallow, so food does not go down the wrong way.', job: 'Makes sound; guards the airway' },
+  trachea: { n: 'Trachea (windpipe)', k: 'air', t: 'The <b>trachea</b> is a tube that carries air towards the lungs. <b>Rings of cartilage</b> keep it open. Its lining has <b>mucus</b> and tiny hair-like <b>cilia</b> that trap particles and sweep them upwards.', job: 'Carries air to the lungs' },
+  bronchi: { n: 'Bronchi', k: 'air', t: 'At its lower end the trachea divides into two <b>main bronchi</b> (one bronchus, two bronchi): one goes into the <b>right lung</b> and one into the <b>left lung</b>. Each bronchus then branches into smaller and smaller airways.', job: 'Carry air into each lung' },
+  bronchioles: { n: 'Bronchioles', k: 'air', t: 'The <b>bronchioles</b> are the very small, thin airways. They branch many times, like the twigs of an upside-down tree, so air can be shared out to every part of the lung.', job: 'Spread air through the lungs' },
+  lungs: { n: 'Lungs', k: 'organ', t: 'You have a <b>right lung</b> and a <b>left lung</b>. They are soft and spongy. The left lung is a little smaller to leave room for the heart. Lungs have <b>no muscles of their own</b>: they expand when the diaphragm and rib muscles make the chest bigger.', job: 'Take in oxygen, give out carbon dioxide' },
+  alveoli: { n: 'Alveoli (air sacs)', k: 'organ', t: 'At the end of the smallest airways are clusters of tiny air sacs called <b>alveoli</b> (one is an alveolus). The lungs contain hundreds of millions of them. Their walls are extremely thin, so <b>gas exchange</b> happens here.', job: 'Where gases are exchanged' },
+  capillaries: { n: 'Capillaries', k: 'organ', t: 'Tiny blood vessels called <b>capillaries</b> wrap around every alveolus. Their walls are very thin too, so <b>oxygen can pass into the blood</b> and <b>carbon dioxide can pass out</b>.', job: 'Carry blood next to the alveoli' },
+  diaphragm: { n: 'Diaphragm', k: 'muscle', t: 'The <b>diaphragm</b> is a dome-shaped sheet of muscle under the lungs. When you breathe in it <b>contracts and moves down</b>, making the chest cavity bigger. When you breathe out it relaxes and moves back up.', job: 'Main breathing muscle' },
+  ribs: { n: 'Rib cage and rib muscles', k: 'muscle', t: 'The <b>rib cage</b> protects the lungs and heart. Small <b>intercostal muscles</b> between the ribs lift the ribs up and out when you breathe in, making the chest wider. In quiet breathing the ribs return as the muscles relax.', job: 'Protect lungs; widen the chest' }
+};
+const PLIST = { air: ['nose', 'mouth', 'pharynx', 'larynx', 'trachea', 'bronchi', 'bronchioles'], organ: ['lungs', 'alveoli', 'capillaries'], muscle: ['diaphragm', 'ribs'] };
+const BODY = { g: null, pk: [], sel: null, cut: true, shell: [], hl: {}, lg: [], arrows: null };
+const BR = { b: 0, d: 0, t: 0, rate: 14, amp: .7, slow: .7, mode: 'auto', hold: null, manual: 0 };
+const AIR = { force: 0, a: 0, b: 1, on: true, sp: 1 };
+const breathShape = p => p < .4 ? sstep(0, .4, p) : 1 - sstep(.4, 1, p);
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+function biconcave(r, th) {
+  const up = [[0, .22], [.15, .24], [.3, .3], [.5, .42], [.7, .5], [.85, .46], [.95, .3], [1, .02]];
+  const order = [...up.map(p => new THREE.Vector2(p[0], -p[1] * th)), ...up.slice().reverse().map(p => new THREE.Vector2(p[0], p[1] * th))];
+  const g = new THREE.LatheGeometry(order, 16); g.scale(r, 1, r); return g;
+}
+function regHL(id, m) { (BODY.hl[id] = BODY.hl[id] || []).push(m); }
+function cylBetween(a, b, r, mat, parent, pid) {
+  const d = b.clone().sub(a), len = d.length(), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * .9, len, 10, 1, true), mat);
+  m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize()); if (pid) m.userData.pid = pid; parent.add(m); return m;
+}
+function tubeP(pts, r, mat, parent, pid, seg) { const cv = new THREE.CatmullRomCurve3(pts, false, 'centripetal'), m = new THREE.Mesh(new THREE.TubeGeometry(cv, seg || 24, r, 12, false), mat); if (pid) m.userData.pid = pid; parent.add(m); return m; }
+
+function buildBody() {
+  const G = BODY.g = new THREE.Group(); scene.add(G); const low = W.gfx === 'low';
+  const stdM = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .5, metalness: .05, transparent: true, opacity: .9 }, o || {}));
+  /* ---- skin shells ---- */
+  const skin = (geo, x, y, z, sx, sy, sz, rot) => { const rim = new THREE.Mesh(geo, rimMat(0x5fd0ff, 1)), fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x2a78b8, transparent: true, opacity: .1, depthWrite: false })); [rim, fill].forEach(m => { m.position.set(x, y, z); m.scale.set(sx, sy, sz); if (rot) m.rotation.z = rot; G.add(m); }); BODY.shell.push({ rim, fill }); };
+  const S1 = new THREE.SphereGeometry(1, 36, 24), CP = r => new THREE.CapsuleGeometry(r, 11, 6, 14);
+  skin(S1, 0, -4.5, 0, 9, 10.5, 5.6); skin(S1, 0, 2.6, 0, 10.2, 8.2, 6.4); skin(S1, 0, 15.6, .2, 3.6, 4.4, 3.9); skin(new THREE.CylinderGeometry(1.7, 2, 4, 18), 0, 10, -.2, 1, 1, 1);
+  skin(CP(1.9), -12.2, 1, -.2, 1, 1, 1, .1); skin(CP(1.9), 12.2, 1, -.2, 1, 1, 1, -.1);
+  /* ---- head airways ---- */
+  const airM = () => stdM(0xffb3a0, { opacity: .55, emissive: 0x40100a, emissiveIntensity: 0 });
+  const mk = (geo, x, y, z, sx, sy, sz, id, mat) => { const m = new THREE.Mesh(geo, mat || airM()); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.userData.pid = id; G.add(m); BODY.pk.push(m); regHL(id, m); return m; };
+  mk(S1, 0, 15.5, 1.7, 1.0, 1.5, 1.7, 'nose'); mk(S1, 0, 14.6, 3.9, .95, 1.2, 1.0, 'nose'); mk(S1, 0, 13.2, 2.0, 1.7, .6, 1.5, 'mouth'); mk(S1, 0, 13.2, 3.7, 1.1, .38, .5, 'mouth', stdM(0xff7a8a, { opacity: .9 }));
+  const ph = tubeP([V3(0, 14.4, .7), V3(0, 13.2, -.1), V3(0, 12.2, -.35), V3(0, 11.4, -.35)], 1.0, airM(), G, 'pharynx', 16); BODY.pk.push(ph); regHL('pharynx', ph);
+  const lx = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.0, 1.6, 6, 1), stdM(0xdbe7ff, { opacity: .8, emissive: 0x112244, emissiveIntensity: 0 })); lx.position.set(0, 10.6, -.35); lx.userData.pid = 'larynx'; G.add(lx); BODY.pk.push(lx); regHL('larynx', lx);
+  /* trachea with cartilage rings */
+  const tr = new THREE.Mesh(new THREE.CylinderGeometry(.82, .82, 6.2, 20, 1, true), stdM(0xffc7b8, { opacity: .55, side: THREE.DoubleSide, emissive: 0x40100a, emissiveIntensity: 0, depthWrite: false })); tr.position.set(0, 6.9, -.35); tr.userData.pid = 'trachea'; G.add(tr); BODY.pk.push(tr); regHL('trachea', tr);
+  for (let i = 0; i < 12; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.86, .1, 8, 20, 5.3), stdM(0xf4ecd8, { opacity: .95 })); r.rotation.x = Math.PI / 2; r.rotation.z = Math.PI / 2 + .5 - .0; r.position.set(0, 9.7 - i * .5, -.35); r.userData.pid = 'trachea'; G.add(r); BODY.pk.push(r); }
+  const CAR = V3(0, 3.8, -.35);
+  /* ---- lungs, bronchi, bronchioles ---- */
+  const trees = [];
+  [-1, 1].forEach(sd => {
+    const c = V3(sd * 4.7, .1, -.3), rad = sd < 0 ? V3(3.6, 6.4, 3.5) : V3(3.2, 6.2, 3.2), g = new THREE.Group(); g.position.copy(c); G.add(g);
+    const lm = new THREE.Mesh(new THREE.SphereGeometry(1, 30, 22), rimMat(0xff9fb4, 1.3)); lm.scale.copy(rad); lm.userData.pid = 'lungs'; g.add(lm); BODY.pk.push(lm); regHL('lungs', lm);
+    const fl = new THREE.Mesh(new THREE.SphereGeometry(1, 22, 16), new THREE.MeshBasicMaterial({ color: 0xff8aa0, transparent: true, opacity: .09, depthWrite: false })); fl.scale.copy(rad); g.add(fl);
+    /* lobes hint: faint fissure rings */
+    const lobes = sd < 0 ? 2 : 1; for (let k = 0; k < lobes; k++) { const rg = new THREE.Mesh(new THREE.TorusGeometry(1, .012, 6, 40), new THREE.MeshBasicMaterial({ color: 0xffd0da, transparent: true, opacity: .5, depthWrite: false })); rg.scale.set(rad.x * .98, rad.z * .98, 1); rg.rotation.x = Math.PI / 2; rg.position.y = (k ? -1 : 1.4) * rad.y * .22 + 0; rg.scale.set(rad.x * .93, rad.z * .93, 1); g.add(rg); }
+    /* tree */
+    const lineP = [], spine = [], tips = [], mt = stdM(0xffd4c4, { opacity: .8, emissive: 0x40100a, emissiveIntensity: 0 }), mb = stdM(0xffe2d2, { opacity: .85, emissive: 0x40100a, emissiveIntensity: 0 });
+    const L = [2.7, 2.3, 1.8, 1.35, 1.0, .75], R = [.34, .26, .19];
+    const inside = p => (p.x / rad.x) ** 2 + (p.y / rad.y) ** 2 + (p.z / rad.z) ** 2 < .8;
+    function br(p, d, depth, isSp) {
+      const len = L[depth] * (.85 + rnd() * .3); let e = p.clone().addScaledVector(d, len), n = 0;
+      while (!inside(e) && n < 8) { d = d.clone().lerp(p.clone().multiplyScalar(-1).normalize(), .3).normalize(); e = p.clone().addScaledVector(d, len * .8); n++; }
+      if (depth < 3) { const m = cylBetween(p, e, R[depth], depth === 0 ? mb : mt, g, 'bronchi'); BODY.pk.push(m); regHL('bronchi', m); } else lineP.push(p.x, p.y, p.z, e.x, e.y, e.z);
+      if (isSp) { if (!spine.length) spine.push(p.clone().add(c)); spine.push(e.clone().add(c)); }
+      if (depth >= 5) { tips.push(e); return; }
+      const ax = d.clone().cross(V3(rnd() - .5, rnd() - .5, rnd() - .5)).normalize(), ang = .5 + rnd() * .3;
+      [1, -1].forEach((s, i) => { const nd = d.clone().applyAxisAngle(ax, ang * s); nd.y -= .1; br(e, nd.normalize(), depth + 1, isSp && i === 0); });
+    }
+    const st = V3(sd * 3.4, 1.2, -.35).sub(c); br(st, V3(sd * .7, -.7, .0).normalize(), 0, true);
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lineP, 3)); const bl = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xffe0d0, transparent: true, opacity: .8 })); bl.userData.base = .8; g.add(bl); regHL('bronchioles', bl);
+    const al = new THREE.InstancedMesh(new THREE.SphereGeometry(.17, 8, 6), new THREE.MeshStandardMaterial({ color: 0xff8fa8, roughness: .5, emissive: 0x551122, emissiveIntensity: 0 }), tips.length * 3); al.userData.pid = 'alveoli'; const dm = new THREE.Object3D();
+    tips.forEach((t, i) => { for (let k = 0; k < 3; k++) { dm.position.copy(t).add(V3((rnd() - .5) * .5, (rnd() - .5) * .5, (rnd() - .5) * .5)); dm.scale.setScalar(.8 + rnd() * .5); dm.updateMatrix(); al.setMatrixAt(i * 3 + k, dm.matrix); } }); g.add(al); BODY.pk.push(al); regHL('alveoli', al);
+    /* capillary tangles around the tips */
+    const cp = []; tips.forEach(t => { for (let k = 0; k < 2; k++) { const a = t.clone().add(V3((rnd() - .5) * .6, (rnd() - .5) * .6, (rnd() - .5) * .6)); let q = a; for (let s = 0; s < 4; s++) { const n = a.clone().add(V3((rnd() - .5) * .9, (rnd() - .5) * .9, (rnd() - .5) * .9)); cp.push(q.x, q.y, q.z, n.x, n.y, n.z); q = n; } } });
+    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cp, 3)); const cb = new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0xe0344d, transparent: true, opacity: .75 })); cb.userData.base = .75; g.add(cb); regHL('capillaries', cb);
+    BODY.lg.push({ g, c, rad, side: sd, spine, tips: tips.map(t => t.clone().add(c)) }); trees.push(spine);
+    /* main bronchus from carina */
+    const mbp = [CAR.clone(), V3(sd * 1.5, 2.8, -.35), V3(sd * 3.4, 1.2, -.35)]; const m = tubeP(mbp, .5, mb, G, 'bronchi', 12); BODY.pk.push(m); regHL('bronchi', m);
+  });
+  /* ---- diaphragm ---- */
+  const dm = new THREE.Mesh(new THREE.SphereGeometry(1, 30, 12, 0, Math.PI * 2, 0, Math.PI / 2), stdM(0xe9955a, { opacity: .4, side: THREE.DoubleSide, emissive: 0x552200, emissiveIntensity: 0, depthWrite: false })); dm.userData.pid = 'diaphragm'; dm.scale.set(8.2, 3.6, 4.8); dm.position.set(0, -8.1, -.3); G.add(dm); BODY.pk.push(dm); BODY.dia = dm; regHL('diaphragm', dm);
+  /* ---- rib cage ---- */
+  const RG = BODY.ribs = new THREE.Group(); G.add(RG); const rm = stdM(0xe8dcc0, { opacity: .55, emissive: 0x554433, emissiveIntensity: 0, depthWrite: false });
+  for (let i = 0; i < 9; i++) {
+    const y0 = 6.6 - i * 1.05, rx = 7.4 + 2.0 * Math.sin(Math.PI * (i + 1.2) / 10.5), rz = 4.6 + .45 * Math.sin(Math.PI * (i + 1) / 10), pts = [];
+    for (let k = 0; k <= 22; k++) { const th = -2.25 + 4.5 * k / 22, cs = Math.cos(th); pts.push(V3(rx * Math.sin(th), y0 - .95 * Math.max(0, cs) + .35 * (1 - cs) * .5, rz * cs - .5)); }
+    const m = tubeP(pts, .13, rm, RG, 'ribs', 40); BODY.pk.push(m);
+  }
+  const stn = new THREE.Mesh(new THREE.BoxGeometry(1.0, 8.6, .35), rm); stn.position.set(0, 2.2, 4.25); stn.userData.pid = 'ribs'; RG.add(stn); BODY.pk.push(stn); regHL('ribs', rm);
+  /* ---- airflow particles ---- */
+  const mkPath = (entry, spine, tag) => {
+    const P = [...entry, V3(0, 14.0, .5), V3(0, 12.7, -.25), V3(0, 11.2, -.35), V3(0, 10.4, -.35), V3(0, 7.6, -.35), CAR.clone(), V3(spine[0].x + (spine[0].x < 0 ? 1.6 : -1.6), 2.9, -.35)], spineSel = spine.slice(1);
+    const names = [], pts = []; entry.forEach(() => { }); const marks = { nose: 0 }; const all = [...P, ...spineSel];
+    const cv = new THREE.CatmullRomCurve3(all, false, 'centripetal'); cv.arcLengthDivisions = 500; const N = 800, s = []; for (let i = 0; i <= N; i++) s[i] = cv.getPointAt(i / N);
+    const near = p => { let bi = 0, bd = 1e9; for (let k = 0; k <= N; k++) { const d = s[k].distanceToSquared(p); if (d < bd) { bd = d; bi = k; } } return bi / N; };
+    const mkr = { in: 0, phar: near(V3(0, 12.7, -.25)), lar: near(V3(0, 10.4, -.35)), trach: near(V3(0, 7.6, -.35)), carina: near(CAR), bronchus: near(all[P.length - 1]), alv: 1 };
+    mkr.bl = (mkr.bronchus + 1) / 2; return { cv, mk: mkr, len: cv.getLength() };
+  };
+  const spR = BODY.lg[0].spine, spL = BODY.lg[1].spine;
+  AIR.paths = [mkPath([V3(0, 14.4, 4.4), V3(0, 15.0, 2.6)], spR), mkPath([V3(0, 13.2, 4.2), V3(0, 13.2, 2.0)], spL)];
+  AIR.paths.forEach((p, i) => { p.n = low ? 16 : 26; p.im = new THREE.InstancedMesh(new THREE.SphereGeometry(.17, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), p.n); p.im.frustumCulled = false; p.u0 = []; p.off = []; p.col = new THREE.Color(); p.d = new THREE.Object3D(); for (let k = 0; k < p.n; k++) { p.u0.push(k / p.n); p.off.push(V3((rnd() - .5) * .4, (rnd() - .5) * .4, (rnd() - .5) * .4)); p.im.setColorAt(k, new THREE.Color(1, 1, 1)); } p.u = 0; G.add(p.im); });
+  /* ---- arrows used by the breathing simulation ---- */
+  const AR = BODY.arrows = new THREE.Group(); AR.visible = false; G.add(AR);
+  const arrow = (col) => { const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: col, depthTest: false, transparent: true, opacity: .95 }); const sh = new THREE.Mesh(new THREE.CylinderGeometry(.22, .22, 2, 10), m), hd = new THREE.Mesh(new THREE.ConeGeometry(.55, 1.1, 12), m); hd.position.y = 1.5; sh.renderOrder = hd.renderOrder = 10; g.add(sh, hd); g.userData.m = m; return g; };
+  BODY.ar = { dia: arrow(0xffa040), rl: arrow(0xffe24a), rr: arrow(0xffe24a), air: arrow(0x35d4ff) };
+  BODY.ar.dia.position.set(0, -6.8, 2.6); BODY.ar.rl.position.set(-10.8, 1.5, 1.5); BODY.ar.rr.position.set(10.8, 1.5, 1.5); BODY.ar.air.position.set(0, 8.2, 1.4);
+  for (const k in BODY.ar) AR.add(BODY.ar[k]);
+  BODY.setCut(true);
+}
+BODY.setCut = function (on) {
+  this.cut = on; this.shell.forEach(s => { s.fill.visible = !on; s.rim.material.uniforms.uA.value = on ? .55 : 1; }); this.ribs.visible = on || this.forceRibs; this.dia.visible = on || this.forceRibs;
+};
+function updBody(dt) {
+  let nb;
+  if (BR.pause) nb = BR.b; else if (BR.mode === 'manual') nb = BR.manual; else if (BR.hold) nb = BR.b + ((BR.hold === 'in' ? .95 : 0) - BR.b) * Math.min(1, dt * .9); else { BR.t += dt * BR.rate / 60 * BR.slow; nb = breathShape(BR.t % 1); }
+  const d = dt > 0 ? (nb - BR.b) / dt : 0; BR.d += (clamp(d, -3, 3) - BR.d) * Math.min(1, dt * 10 || 0); BR.b = nb;
+  const G = BODY; if (!G.g.visible) return; const e = BR.b * BR.amp, bt = performance.now() / 1000;
+  G.dia.position.y = -8.1 - 1.55 * e; G.dia.scale.y = 3.6 * (1 - .3 * e);
+  G.ribs.scale.set(1 + .05 * e, 1, 1 + .08 * e); G.ribs.position.y = .3 * e;
+  G.lg.forEach(l => { const k = .11 * e; l.g.scale.set(l.rad.x ? 1 + .07 * e : 1, 1 + k, 1 + .08 * e); l.g.position.y = l.c.y - l.rad.y * k + 0; });
+  G.shell[1].rim.scale.set(10.2 * (1 + .015 * e), 8.2, 6.4 * (1 + .03 * e)); G.shell[1].fill.scale.copy(G.shell[1].rim.scale);
+  /* selection pulse */
+  for (const id in G.hl) {
+    const on = G.sel === id, f = on ? .5 + .3 * Math.sin(bt * 5) : 0;
+    G.hl[id].forEach(m => { const mt = m.material || m; if (mt.uniforms && mt.uniforms.uA) mt.uniforms.uA.value = on ? 1.8 + .5 * Math.sin(bt * 5) : 1.3; else if (mt.emissiveIntensity !== undefined) mt.emissiveIntensity = f; else if (mt.opacity !== undefined && m.userData && m.userData.base) mt.opacity = on ? .6 + .4 * Math.sin(bt * 5) * .5 + .3 : m.userData.base; });
+  }
+  /* arrows (breathing simulation) */
+  if (G.arrows.visible) {
+    const dir = BR.d > .04 ? 1 : BR.d < -.04 ? -1 : 0, a = G.ar, set = (g, ax, s) => { g.visible = s !== 0; if (!s) return; g.rotation.set(0, 0, 0); if (ax === 'y') g.rotation.z = s > 0 ? Math.PI : 0; else g.rotation.z = s > 0 ? -Math.PI / 2 : Math.PI / 2; g.scale.setScalar(.8 + Math.min(1, Math.abs(BR.d)) * .6); };
+    set(a.dia, 'y', dir); set(a.air, 'y', dir); a.rl.rotation.set(0, 0, 0); set(a.rl, 'x', -dir); set(a.rr, 'x', dir);
+  }
+}
+function updAir(dt) {
+  const ps = AIR.paths; if (!ps) return;
+  const flow = AIR.force ? AIR.force * .9 : clamp(BR.d, -1.2, 1.2), speed = (AIR.force ? .11 : .09) * AIR.sp;
+  for (const p of ps) {
+    p.im.visible = AIR.on && BODY.g.visible; if (!p.im.visible) continue; p.u = (p.u + dt * speed * flow / (p.len / 30) + 1) % 1;
+    const m = p.mk, a = AIR.a >= 0 ? m[AIR.ra] : 0, b = AIR.rb ? m[AIR.rb] : 1, ex = flow < 0;
+    for (let i = 0; i < p.n; i++) {
+      const u = (p.u0[i] + p.u) % 1; p.cv.getPointAt(u, p.d.position); p.d.position.add(p.off[i]);
+      const ok = inRange(u, AIR.ra ? m[AIR.ra] : 0, AIR.rb ? m[AIR.rb] : 1), fade = ok ? 1 : 0; p.d.scale.setScalar(fade ? 1 : .32); p.d.updateMatrix(); p.im.setMatrixAt(i, p.d.matrix);
+      p.col.setHex(ex ? 0xffa24a : 0x35d4ff); if (ex && (i % 3 === 0)) p.col.setHex(0xd7e0e8); p.im.setColorAt(i, p.col);
+    }
+    p.im.instanceMatrix.needsUpdate = true; p.im.instanceColor.needsUpdate = true;
+  }
+}
+
+/* =====================================================================
+   CLOSE-UP MODELS: alveoli, trachea lining (cilia), body cell, balloon lung
+   ===================================================================== */
+const inRange = (u, a, b) => a <= b ? (u >= a && u <= b) : (u >= a || u <= b);
+const VIEW = { body: null, mic: null, cil: null, cell: null, bal: null, cur: 'body' };
+function setView(v) {
+  VIEW.cur = v; BODY.g.visible = v === 'body'; MIC.g.visible = v === 'mic' || (v === 'body' && MIC.bubble); CIL.g.visible = v === 'cil'; CELL.g.visible = v === 'cell'; BAL.g.visible = v === 'bal';
+  if (v === 'mic') { MIC.g.position.set(0, 0, 0); MIC.g.scale.setScalar(1); MIC.bubble = false; }
+}
+const MIC = { g: null, sacs: [], caps: [], pk: [], bubble: false, show: { gas: true, rbc: true }, slow: 1 };
+function buildMic() {
+  const g = MIC.g = new THREE.Group(); scene.add(g); const low = W.gfx === 'low';
+  const std = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .4, transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false }, o || {}));
+  const duct = new THREE.Mesh(new THREE.CylinderGeometry(.85, .85, 17, 24, 1, true), std(0xe8c9a0, { opacity: .4 })); duct.rotation.z = Math.PI / 2; duct.position.set(-1.5, 0, 0); duct.userData.pid = 'bronchioles'; g.add(duct); MIC.pk.push(duct); MIC.duct = duct;
+  const pos = [[0, .6], [0, 2.7], [0, 4.8], [4, 0], [4, 2.1], [4, 4.2], [8, 1.0], [8, 3.1], [8, 5.2]];
+  MIC.rbcData = []; const tubesPts = [];
+  pos.forEach(([x, ph], si) => {
+    const c = V3(x, 3.3 * Math.cos(ph), 3.3 * Math.sin(ph)), sac = new THREE.Mesh(new THREE.SphereGeometry(2, 28, 20), std(0x9fe8ff, { opacity: .2, emissive: 0x0a3a55, emissiveIntensity: .3 })); sac.position.copy(c); sac.userData.pid = 'alveoli'; g.add(sac); MIC.pk.push(sac); MIC.sacs.push({ c, sac });
+    for (let k = 0; k < 2; k++) {
+      const p0 = rnd() * 6.28, p1 = rnd() * 6.28, pts = []; for (let s = 0; s <= 44; s++) { const t = s / 44 * Math.PI * 3.2 + p0, th = Math.PI / 2 + .95 * Math.sin(1.7 * t + p1); pts.push(V3(c.x + 2.14 * Math.sin(th) * Math.cos(t), c.y + 2.14 * Math.cos(th), c.z + 2.14 * Math.sin(th) * Math.sin(t))); }
+      const cv = new THREE.CatmullRomCurve3(pts, false, 'centripetal'), tb = new THREE.Mesh(new THREE.TubeGeometry(cv, 56, .13, 8, false), std(0xe0485f, { opacity: .55, emissive: 0x330008, emissiveIntensity: .4 })); tb.userData.pid = 'capillaries'; g.add(tb); MIC.pk.push(tb); MIC.caps.push({ cv, c, tb });
+    }
+  });
+  const nr = low ? 30 : 54; MIC.rbc = new THREE.InstancedMesh(biconcave(.27, .7), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .45 }), nr); MIC.rbc.userData.pid = 'rbc'; g.add(MIC.rbc); MIC.pk.push(MIC.rbc);
+  for (let i = 0; i < nr; i++) { MIC.rbcData.push({ cap: i % MIC.caps.length, u: rnd(), sp: .035 + rnd() * .02 }); MIC.rbc.setColorAt(i, new THREE.Color(1, 1, 1)); }
+  const n = low ? 3 : 4; MIC.o2 = new THREE.InstancedMesh(new THREE.SphereGeometry(.22, 12, 10), new THREE.MeshBasicMaterial({ color: 0x3aa0ff }), pos.length * n); MIC.co2 = new THREE.InstancedMesh(new THREE.OctahedronGeometry(.3), new THREE.MeshBasicMaterial({ color: 0xffa23a }), pos.length * n);
+  MIC.o2.frustumCulled = MIC.co2.frustumCulled = false; g.add(MIC.o2, MIC.co2); MIC.pp = [];
+  for (let s = 0; s < pos.length; s++) for (let k = 0; k < n; k++) { const cp = MIC.caps[s * 2 + (k % 2)], q = cp.cv.getPointAt(rnd()); MIC.pp.push({ s, dir: q.clone().sub(cp.c).normalize(), t: rnd(), sp: .22 + rnd() * .12, jit: V3((rnd() - .5) * .3, (rnd() - .5) * .3, (rnd() - .5) * .3) }); }
+  MIC.n = n; MIC.d = new THREE.Object3D(); MIC.col = new THREE.Color();
+  g.visible = false;
+}
+const DARK = new THREE.Color(0x8e1534), BRIGHT = new THREE.Color(0xff2f4a);
+function updMic(dt) {
+  if (!MIC.g.visible) return; const d = MIC.d, sl = MIC.slow * (HB_PAUSED() ? 0 : 1);
+  MIC.sacs.forEach(s => s.sac.scale.setScalar(1 + .045 * BR.b));
+  MIC.rbc.visible = MIC.show.rbc; MIC.o2.visible = MIC.co2.visible = MIC.show.gas;
+  MIC.rbcData.forEach((r, i) => { r.u = (r.u + dt * r.sp * sl) % 1; const cp = MIC.caps[r.cap]; cp.cv.getPointAt(r.u, d.position); const tg = cp.cv.getTangentAt(r.u); d.quaternion.setFromUnitVectors(V3(0, 1, 0), tg.clone().cross(V3(0, 1, .3)).normalize().lengthSq() > .1 ? d.position.clone().sub(cp.c).normalize() : V3(0, 1, 0)); d.scale.setScalar(1); d.updateMatrix(); MIC.rbc.setMatrixAt(i, d.matrix); MIC.col.copy(DARK).lerp(BRIGHT, sstep(.15, .7, r.u)); MIC.rbc.setColorAt(i, MIC.col); });
+  MIC.rbc.instanceMatrix.needsUpdate = true; MIC.rbc.instanceColor.needsUpdate = true;
+  if (MIC.show.gas) {
+    MIC.pp.forEach((p, i) => {
+      p.t = (p.t + dt * p.sp * sl) % 1; const c = MIC.sacs[p.s].c, e = sstep(0, 1, p.t), sc = Math.sin(Math.PI * p.t) * .95 + .05;
+      d.quaternion.identity(); d.scale.setScalar(sc);
+      d.position.copy(c).addScaledVector(p.dir, lerp(.5, 2.45, e)).add(p.jit); d.updateMatrix(); MIC.o2.setMatrixAt(i, d.matrix);
+      d.position.copy(c).addScaledVector(p.dir, lerp(2.45, .5, e)).add(p.jit); d.updateMatrix(); MIC.co2.setMatrixAt(i, d.matrix);
+    });
+    MIC.o2.instanceMatrix.needsUpdate = true; MIC.co2.instanceMatrix.needsUpdate = true;
+  }
+}
+const HB_PAUSED = () => W.paused;
+
+/* ---------- trachea lining with cilia and mucus ---------- */
+const CIL = { g: null, smoke: false };
+function buildCil() {
+  const g = CIL.g = new THREE.Group(); scene.add(g); const low = W.gfx === 'low', R = 4, H = 12, A0 = .9, AL = Math.PI * 2 - 1.8;
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(R + .25, R + .25, H, 40, 1, true, A0, AL), new THREE.MeshStandardMaterial({ color: 0xe9a08a, transparent: true, opacity: .75, side: THREE.DoubleSide, roughness: .6 })); wall.userData.pid = 'trachea'; g.add(wall); CIL.pk = [wall];
+  const mucus = new THREE.Mesh(new THREE.CylinderGeometry(R - .55, R - .55, H, 40, 1, true, A0, AL), new THREE.MeshStandardMaterial({ color: 0xbfe36a, transparent: true, opacity: .28, side: THREE.DoubleSide, depthWrite: false })); g.add(mucus);
+  for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(R + .35, .38, 8, 40, AL), new THREE.MeshStandardMaterial({ color: 0xf4ecd8, roughness: .5 })); r.rotation.x = Math.PI / 2; r.rotation.z = A0 + Math.PI / 2 * 0 - Math.PI / 2 + 0; r.position.y = -4.2 + i * 2.8; g.add(r); }
+  const nC = low ? 260 : 520; CIL.n = nC; CIL.cil = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.05, .75, 3, 6), new THREE.MeshStandardMaterial({ color: 0xffe6a8, roughness: .5, emissive: 0x332200 }), nC); g.add(CIL.cil);
+  CIL.cd = []; for (let i = 0; i < nC; i++) CIL.cd.push({ a: A0 + .1 + rnd() * (AL - .2), y: (rnd() - .5) * H * .96, ph: rnd() * 6.28 });
+  const nD = 26; CIL.dust = new THREE.InstancedMesh(new THREE.SphereGeometry(.17, 8, 6), new THREE.MeshStandardMaterial({ color: 0x8b6a4a, roughness: .8 }), nD); g.add(CIL.dust); CIL.dd = [];
+  for (let i = 0; i < nD; i++) CIL.dd.push({ st: 0, a: A0 + .3 + rnd() * (AL - .6), y: rnd() * H - H / 2, r: rnd() * 2.6, ys: -2 + rnd() * 4, smoke: i >= 14 });
+  CIL.dm = new THREE.Object3D(); CIL.A0 = A0; CIL.R = R; CIL.H = H; g.visible = false;
+}
+function updCil(dt) {
+  if (!CIL.g.visible) return; const t = performance.now() / 1000, d = CIL.dm, R = CIL.R - .55, sm = CIL.smoke, amp = sm ? .22 : .7, up = V3(0, 1, 0), rad = V3(), dir = V3(), sl = W.paused ? 0 : 1;
+  CIL.cd.forEach((c, i) => {
+    const s = Math.sin(t * (sm ? 3 : 7) * sl + c.ph * 0 + c.y * .9 + c.a * 1.3), tilt = .25 + amp * s;
+    rad.set(Math.cos(c.a), 0, Math.sin(c.a)); d.position.set(rad.x * (R + .35), c.y, rad.z * (R + .35)); dir.copy(rad).multiplyScalar(-Math.cos(tilt)).addScaledVector(up, Math.sin(tilt)).normalize();
+    d.quaternion.setFromUnitVectors(up, dir); d.scale.setScalar(1); d.position.addScaledVector(dir, .4); d.updateMatrix(); CIL.cil.setMatrixAt(i, d.matrix);
+  }); CIL.cil.instanceMatrix.needsUpdate = true;
+  CIL.dd.forEach((p, i) => {
+    const ok = !p.smoke || sm; d.quaternion.identity();
+    if (p.st === 0) { p.y -= dt * 2.2 * sl; p.r = Math.min(R - .1, p.r + dt * .5 * sl); if (p.y < p.ys) { p.st = 1; p.r = R - .2; } }
+    else { p.y += dt * (sm ? .35 : 1.2) * sl; if (p.y > CIL.H / 2 - .3) { p.st = 0; p.y = CIL.H / 2 - .5; p.r = rnd() * 2.4; p.a = CIL.A0 + .3 + rnd() * (Math.PI * 2 - 2.4); p.ys = -2 + rnd() * 4; } }
+    d.position.set(Math.cos(p.a) * p.r, p.y, Math.sin(p.a) * p.r); d.scale.setScalar(ok ? (p.smoke ? 1.15 : 1) : .0001); d.updateMatrix(); CIL.dust.setMatrixAt(i, d.matrix);
+    if (p.smoke) CIL.dust.setColorAt(i, new THREE.Color(0x50555c)); else CIL.dust.setColorAt(i, new THREE.Color(0x9c7a52));
+  }); CIL.dust.instanceMatrix.needsUpdate = true; if (CIL.dust.instanceColor) CIL.dust.instanceColor.needsUpdate = true;
+}
+
+/* ---------- a body cell (cellular respiration) ---------- */
+const CELL = { g: null };
+function buildCell() {
+  const g = CELL.g = new THREE.Group(); scene.add(g);
+  const cm = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 22), new THREE.MeshStandardMaterial({ color: 0x7fe0b0, transparent: true, opacity: .16, roughness: .3, side: THREE.DoubleSide, depthWrite: false })); cm.userData.pid = 'cell'; g.add(cm); CELL.pk = [cm];
+  const nu = new THREE.Mesh(new THREE.SphereGeometry(1.6, 22, 16), new THREE.MeshStandardMaterial({ color: 0x8a6ae0, roughness: .5, transparent: true, opacity: .9 })); nu.position.set(-1.8, 1.8, -1.5); g.add(nu);
+  CELL.mito = [V3(2.2, -1.2, 1), V3(-2.4, -2.6, 1.2), V3(1.6, 2.6, -2.2)].map((p, i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: 0xff9a4a, roughness: .45, emissive: 0x552200, emissiveIntensity: .4, transparent: true, opacity: .9 })); m.scale.set(1.5, .8, .8); m.position.copy(p); m.rotation.z = i * 1.1; m.userData.pid = 'mito'; g.add(m); CELL.pk.push(m); for (let k = -2; k <= 2; k++) { const c = new THREE.Mesh(new THREE.TorusGeometry(.55, .04, 6, 16), new THREE.MeshBasicMaterial({ color: 0xffd0a0 })); c.rotation.y = Math.PI / 2; c.position.x = k * .5; m.add(c); } return m; });
+  const mkI = (geo, col, n) => { const im = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: col }), n); im.frustumCulled = false; g.add(im); return im; };
+  const N = 12; CELL.types = [
+    { im: mkI(new THREE.DodecahedronGeometry(.28), 0xffd23a, N), dirIn: true, sp: .16 }, { im: mkI(new THREE.SphereGeometry(.2, 10, 8), 0x3aa0ff, N), dirIn: true, sp: .2 },
+    { im: mkI(new THREE.OctahedronGeometry(.26), 0xffa23a, N), dirIn: false, sp: .18 }, { im: mkI(new THREE.SphereGeometry(.17, 8, 6), 0x7ff0ff, N), dirIn: false, sp: .15 }];
+  CELL.types.forEach((T, ti) => { T.p = []; for (let i = 0; i < N; i++) { const a = rnd() * Math.PI, b = rnd() * 6.28, far = V3(Math.cos(b) * Math.sin(a) * 10, Math.cos(a) * 10, Math.sin(b) * Math.sin(a) * 10); if (T.dirIn) far.x = -Math.abs(far.x) - 4; else far.x = Math.abs(far.x) + 4; T.p.push({ far, m: CELL.mito[i % 3], t: rnd(), j: V3((rnd() - .5) * .8, (rnd() - .5) * .8, (rnd() - .5) * .8) }); } });
+  CELL.en = []; const gm = glowMat(0xffe14a); for (let i = 0; i < 18; i++) { const s = new THREE.Sprite(gm.clone()); s.scale.set(.9, .9, 1); g.add(s); CELL.en.push({ s, m: CELL.mito[i % 3], t: rnd(), v: V3((rnd() - .5), (rnd() - .2) * 1, (rnd() - .5)).normalize() }); }
+  CELL.d = new THREE.Object3D(); g.visible = false;
+}
+function updCell(dt) {
+  if (!CELL.g.visible) return; const d = CELL.d, sl = W.paused ? 0 : 1;
+  CELL.types.forEach(T => { T.p.forEach((p, i) => { p.t = (p.t + dt * T.sp * sl) % 1; const e = sstep(0, 1, p.t), a = T.dirIn ? p.far : p.m.position, b = T.dirIn ? p.m.position : p.far; d.position.lerpVectors(a, b, e).add(p.j); d.scale.setScalar(Math.max(.02, Math.sin(Math.PI * p.t) * 1.2)); d.rotation.set(p.t * 6, p.t * 4, 0); d.updateMatrix(); T.im.setMatrixAt(i, d.matrix); }); T.im.instanceMatrix.needsUpdate = true; });
+  CELL.en.forEach(e => { e.t = (e.t + dt * .45 * sl) % 1; e.s.position.copy(e.m.position).addScaledVector(e.v, 1 + e.t * 3.2); e.s.material.opacity = 1 - e.t; e.s.scale.setScalar(.5 + (1 - e.t) * .8); });
+}
+
+/* ---------- the balloon lung model ---------- */
+const BAL = { g: null, m: 50, tgt: 50, sag: .4, vol: 0, pk: [] };
+function buildBal() {
+  const g = BAL.g = new THREE.Group(); scene.add(g);
+  const glass = new THREE.MeshStandardMaterial({ color: 0xbfeaff, transparent: true, opacity: .14, roughness: .1, side: THREE.DoubleSide, depthWrite: false });
+  const bot = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, 9.4, 40, 1, true), glass); bot.position.y = 0; bot.userData.pid = 'bottle'; g.add(bot); BAL.pk.push(bot);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 4.2, 2, 40, 1, true), glass); sh.position.y = 5.7; g.add(sh); const nk = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.2, 24, 1, true), glass); nk.position.y = 7.8; g.add(nk);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(4.2, .08, 8, 48), new THREE.MeshBasicMaterial({ color: 0x9fe0ff })); rim.rotation.x = Math.PI / 2; rim.position.y = -4.7; g.add(rim);
+  const tm = new THREE.MeshStandardMaterial({ color: 0xdfeaf2, transparent: true, opacity: .85, roughness: .3 });
+  const tb0 = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, 7.4, 12), tm); tb0.position.set(0, 6.6, 0); tb0.userData.pid = 'tube'; g.add(tb0); BAL.pk.push(tb0);
+  tubeP([V3(0, 3, 0), V3(-.2, 2.4, 0), V3(-1.2, 1.9, 0), V3(-1.8, 1.5, 0)], .22, tm, g, 'tube', 10); tubeP([V3(0, 3, 0), V3(.2, 2.4, 0), V3(1.2, 1.9, 0), V3(1.8, 1.5, 0)], .22, tm, g, 'tube', 10);
+  BAL.bl = [-1, 1].map(s => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 20), new THREE.MeshStandardMaterial({ color: s < 0 ? 0xff8fb0 : 0xff9ac0, roughness: .35, transparent: true, opacity: .9 })); m.position.set(s * 1.8, .4, 0); m.userData.pid = 'balloon'; g.add(m); BAL.pk.push(m); return m; });
+  BAL.mem = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xff9a3a, roughness: .5, side: THREE.DoubleSide })); BAL.mem.position.y = -4.7; BAL.mem.scale.set(4.2, 1, 4.2); BAL.mem.userData.pid = 'membrane'; g.add(BAL.mem); BAL.pk.push(BAL.mem);
+  BAL.stalk = new THREE.Mesh(new THREE.CylinderGeometry(.14, .14, 1, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd })); g.add(BAL.stalk); BAL.knob = new THREE.Mesh(new THREE.SphereGeometry(.7, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffd23a, roughness: .4 })); BAL.knob.userData.pid = 'membrane'; g.add(BAL.knob); BAL.pk.push(BAL.knob);
+  const am = c => { const a = new THREE.Group(), mt = new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true }); const s = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, 1.6, 8), mt), h = new THREE.Mesh(new THREE.ConeGeometry(.45, .9, 10), mt); h.position.y = 1.25; s.renderOrder = h.renderOrder = 10; a.add(s, h); return a; };
+  BAL.aAir = am(0x35d4ff); BAL.aAir.position.set(0, 11.6, 0); BAL.aMem = am(0xffa040); BAL.aMem.position.set(5.4, -5.4, 0); g.add(BAL.aAir, BAL.aMem); g.visible = false;
+}
+function updBal(dt) {
+  if (!BAL.g.visible) return; BAL.m += (BAL.tgt - BAL.m) * Math.min(1, dt * 4); const prev = BAL.sag; BAL.sag = lerp(-.9, 2.4, BAL.m / 100);
+  BAL.mem.scale.y = BAL.sag; BAL.mem.scale.x = BAL.mem.scale.z = 4.2; BAL.knob.position.y = -4.7 - BAL.sag - 1.0; BAL.stalk.scale.y = Math.max(.1, BAL.sag + .6); BAL.stalk.position.y = -4.7 - BAL.sag * .5 - .3 - .0;
+  const vol = (2 / 3) * Math.PI * 4.2 * 4.2 * BAL.sag, base = (2 / 3) * Math.PI * 4.2 * 4.2 * .75, dv = vol - base; BAL.vol = dv;
+  const r = Math.cbrt(1 + dv / 420 * 1.8); BAL.bl.forEach(b => { b.scale.setScalar(1.5 * r); b.position.y = .4 - (r - 1) * .6; });
+  const v = (BAL.sag - prev) / Math.max(dt, 1e-3), t = performance.now() / 1000;
+  BAL.aMem.visible = Math.abs(v) > .35; BAL.aMem.rotation.z = v > 0 ? Math.PI : 0; BAL.aAir.visible = Math.abs(v) > .35; BAL.aAir.rotation.z = v > 0 ? Math.PI : 0; BAL.aAir.position.y = 10.8 + .4 * Math.sin(t * 8);
+  BAL.mv = Math.abs(v) > .35 ? (v > 0 ? 1 : -1) : 0;
+}
+
+/* ---------- extra labels ---------- */
+function addExtraLabels() {
+  const SM = ['explore', 'air', 'breath', 'alveoli', 'cell', 'balloon', 'health'];
+  const L = (id, t, a, o, key, pid) => addLabel(id, t, a, o, SM, { key, pid });
+  L('l_nose', 'Nose', [0, 14.8, 3.9], [4.2, 2.2, 2.4], 'air', 'nose'); L('l_mouth', 'Mouth', [0, 13.2, 3.8], [-4.2, -1.0, 2.4], 'air', 'mouth'); L('l_phar', 'Pharynx', [0, 12.3, -.3], [4.8, -.6, 2], 'air', 'pharynx'); L('l_lar', 'Larynx', [0, 10.6, -.3], [5.2, -2.2, 2], 'air', 'larynx');
+  L('l_tra', 'Trachea', [0, 7.0, -.3], [-5.0, 1.2, 2.4], 'air', 'trachea'); L('l_bro', 'Bronchi', [-2.0, 2.4, -.3], [-3.8, 3.4, 2.6], 'air', 'bronchi'); L('l_lun', 'Lung', [5.2, -1.5, 1.5], [4.6, -2.6, 1.8], 'air', 'lungs');
+  L('l_dia', 'Diaphragm', [3.6, -6.2, 1.8], [5.6, -3.4, 1.5], 'musc', 'diaphragm'); L('l_rib', 'Rib cage', [-9.2, 3.0, 1.5], [-3.2, 3.0, 2], 'musc', 'ribs'); L('l_lun2', 'Lung', [-5.6, -1.5, 1.5], [-4.8, -2.8, 1.8], 'musc', 'lungs');
+  L('l_bl', 'Bronchioles', [-5.2, 1.6, .3], [-3.6, 6.6, 3], 'gas', 'bronchioles'); L('l_al', 'Alveoli (air sacs)', [-5.4, -3.3, .2], [-3.8, -5.6, 3], 'gas', 'alveoli'); L('l_cap', 'Capillaries', [5.6, -2.6, .3], [3.6, -5.2, 3], 'gas', 'capillaries');
+  L('m_duct', 'Bronchiole', [-6, 0, 0], [-1, 4.2, 1], 'mic', 'bronchioles'); L('m_sac', 'Alveolus (air space)', [3.2, 2.9, 2.0], [-.4, 4.4, 2.2], 'mic', 'alveoli'); L('m_cap', 'Capillary', [0.1, -1.2, 2.2], [-3.6, -4.2, 2.4], 'mic', 'capillaries'); L('m_wall', 'Thin wall', [6.4, 1.1, 2.0], [2.8, 5.6, 2.4], 'mic', 'alveoli');
+  L('c_cil', 'Cilia (tiny hairs)', [2.2, 0, 3.4], [3.6, 3.2, 2.2], 'cil'); L('c_muc', 'Mucus layer', [-3.3, 2, 1.2], [-4.6, 3.8, 1.5], 'cil'); L('c_car', 'Cartilage ring', [3.4, -4.2, 2.2], [3.6, -3, 1.6], 'cil'); L('c_dust', 'Trapped dust', [-1.5, -1, 3.2], [-4.4, -3.6, 1.8], 'cil');
+  L('e_mit', 'Mitochondrion', [2.2, -1.2, 1.5], [4.2, -3.6, 2.4], 'cellL'); L('e_nuc', 'Nucleus', [-1.8, 1.8, -1], [-4.8, 4.2, 2.6], 'cellL'); L('e_mem', 'Cell surface', [-5.8, -1, 1.6], [-3.2, -3.8, 2.2], 'cellL');
+  L('b_bot', 'Bottle = chest cavity', [4.2, 1.6, 0], [4.6, 3.0, 1], 'balL'); L('b_tube', 'Tube = trachea & bronchi', [0, 6.4, .3], [-5.6, 2, 1], 'balL'); L('b_bal', 'Balloons = lungs', [-1.8, .5, 1], [-5.4, -1.2, 2], 'balL'); L('b_mem', 'Rubber sheet = diaphragm', [3.2, -4.7, 0], [3.6, -2.4, 1.4], 'balL');
+}
+
+/* =====================================================================
+   STAGES (part 1): framework, title, explore, follow the air, breathing simulation
+   ===================================================================== */
+const btn = (a, l, c, x) => `<button class="btn ${c || ''}" data-act="${a}" ${x || ''}>${l}</button>`;
+const sliderH = (id, label, val, min, max, step, shown) => `<div class="ctl"><label for="${id}">${label}<span id="${id}v" class="pill">${shown}</span></label><input type="range" id="${id}" data-in="${id}" min="${min}" max="${max}" step="${step || 1}" value="${val}"></div>`;
+const WIDE = { t: [0, 2, 0], d: 58, yaw: 0, pitch: .06 }, FRONT = { t: [0, 3, 0], d: 44, yaw: .15, pitch: .1 };
+
+const Stage = {
+  cur: null, id: null, list: {}, keepFollow: false,
+  enter(id) {
+    if (this.cur) this.cleanup();
+    const s = this.list[id]; this.cur = s; this.id = id; W.mode = id;
+    Object.assign(BR, { rate: 14, amp: .7, slow: .9, mode: 'auto', hold: null, manual: 0, pause: false }); Object.assign(AIR, { force: 0, ra: null, rb: null, on: true, sp: 1 });
+    BODY.sel = null; BODY.forceRibs = false; BODY.arrows.visible = false; BODY.setCut(s.cut !== false); CIL.smoke = false; MIC.bubble = false; MIC.show.gas = MIC.show.rbc = true; MIC.slow = 1;
+    this.G = new THREE.Group(); scene.add(this.G); setView(s.view || 'body');
+    camGo(s.cam, false); CAM.auto = !!s.auto; CAM.min = s.min || 5; CAM.max = s.max || 130; CAM.follow = null;
+    s.enter();
+  },
+  cleanup() {
+    const s = this.cur; if (s.exit) s.exit();
+    if (this.G) { scene.remove(this.G); this.G.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this.G = null; }
+    CAM.follow = null; BODY.sel = null; BR.pause = false;
+  },
+  update(dt, raw) {
+    const s = this.cur; if (!s) return;
+    updBody(dt); updAir(dt); updMic(dt); updCil(dt); updCell(dt); updBal(dt); if (s.update) s.update(dt, raw);
+  }
+};
+function initStages() { }
+function selectPart(id) { BODY.sel = id; if (Stage.cur && Stage.cur.onSel) Stage.cur.onSel(id); UI.render(); }
+const chipRow = ids => ids.map(i => btn('sel:' + i, PARTS[i].n.replace(' and nasal cavity', '').replace(' (throat)', '').replace(' (voice box)', '').replace(' (windpipe)', '').replace(' (air sacs)', '').replace(' and rib muscles', ''), 'sm' + (BODY.sel === i ? ' on' : ''), `aria-label="Select ${PARTS[i].n}"`)).join('');
+function cardFor(id) { const P = PARTS[id]; if (!P) return ''; return `<div class="box fact"><b>${P.n}</b> <span class="pill">${P.job}</span><p style="margin:.45em 0">${P.t}</p></div>`; }
+
+/* ---------- TITLE ---------- */
+Stage.list.title = {
+  cam: { t: [7, 1, 0], d: 60, yaw: -.12, pitch: .06 }, auto: true, cut: false,
+  enter() {
+    BR.rate = 14; BR.amp = .85; MIC.bubble = true; MIC.g.visible = true; MIC.g.position.set(21, -1, 3); MIC.g.scale.setScalar(.62);
+    const halo = new THREE.Sprite(glowMat(0x35d4ff)); halo.scale.set(20, 20, 1); halo.position.set(23, 0, -2); Stage.G.add(halo);
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(6.5, -2, 1), V3(10, 1, 2), V3(15, 0, 3)]), new THREE.LineBasicMaterial({ color: 0x8fe9ff, transparent: true, opacity: .6 })); Stage.G.add(l);
+    AIR.sp = .8;
+  },
+  update() { }, panel() { return ''; }
+};
+
+/* ---------- EXPLORE THE BODY ---------- */
+Stage.list.explore = {
+  cam: FRONT, labs: 'air', over: false,
+  enter() { this.labs = 'air'; BODY.setCut(true); BR.amp = .75; },
+  tap(pid) { selectPart(pid && PARTS[pid] ? (pid === BODY.sel ? null : pid) : null); },
+  act(k, v) {
+    if (k === 'sel') selectPart(v === BODY.sel ? null : v);
+    else if (k === 'cut') { BODY.setCut(!BODY.cut); UI.render(); }
+    else if (k === 'labs') { this.labs = v; UI.render(); }
+    else if (k === 'pause') { BR.pause = !BR.pause; UI.render(); }
+    else if (k === 'reset') camGo(FRONT);
+    else if (k === 'over') { this.over = !this.over; camGo(this.over ? WIDE : FRONT); UI.render(); }
+    else if (k === 'head') camGo({ t: [0, 12, 0], d: 18, yaw: .5, pitch: .1 });
+    else if (k === 'lung') camGo({ t: [0, 1, 0], d: 28, yaw: 0, pitch: .05 });
+  },
+  labelOn(key) { return this.labs === 'all' ? (key === 'air' || key === 'musc' || key === 'gas') : key === this.labs; },
+  panel() {
+    const lb = (k, n) => btn('labs:' + k, n, 'sm' + (this.labs === k ? ' on' : ''));
+    return `<div class="kick">Explore the Body</div><h3>The respiratory system</h3>
+    <p><b>Drag</b> to rotate, <b>pinch or scroll</b> to zoom, <b>tap an organ</b> (or choose it below) to learn about it. The body is seen from the front, so the <b>right lung is on your left</b>.</p>
+    <div class="row">${btn('cut', BODY.cut ? '🧍 Full-body view' : '🔪 Cutaway view', 'sm' + (BODY.cut ? ' on' : ''))}${btn('pause', BR.pause ? '▶ Resume breathing' : '⏸ Pause breathing', 'sm')}${btn('over', this.over ? '🔍 Closer' : '🌍 Wide view', 'sm')}${btn('reset', '⌖ Reset view', 'sm')}</div>
+    <div class="lh"><b>Labels</b> (a few at a time)</div><div class="row">${lb('air', '🌬 Air pathway')}${lb('musc', '💪 Breathing muscles')}${lb('gas', '🔬 Gas exchange')}${lb('all', 'All')}</div>
+    <div class="lh"><b>Air pathway</b></div><div class="row">${chipRow(PLIST.air)}</div>
+    <div class="lh"><b>Lungs and gas exchange</b></div><div class="row">${chipRow(PLIST.organ)}</div>
+    <div class="lh"><b>Breathing muscles</b></div><div class="row">${chipRow(PLIST.muscle)}</div>
+    ${BODY.sel ? cardFor(BODY.sel) : '<div class="box an">Nothing selected yet. Tap an organ in the 3D view.</div>'}
+    <div class="box nt"><b>Simplified model: </b>sizes and positions are approximate, and the number of branching airways is much smaller than in a real lung.</div>`;
+  }
+};
+
+/* ---------- FOLLOW THE AIR (6 stages) ---------- */
+const AS = [
+  { n: 'Nose and mouth', s: 'Nose & mouth', ra: 'in', rb: 'phar', force: 1, cam: { t: [0, 12.6, 1.5], d: 26, yaw: .5, pitch: .08 }, t: 'Air can enter through your <b>nose</b> or through your <b>mouth</b>. The nose helps <b>filter</b> the air with tiny hairs and mucus, <b>warm</b> it and <b>moisten</b> it. The mouth is another pathway, which is handy when you need more air quickly, but it does not clean the air as well.' },
+  { n: 'Pharynx and larynx', s: 'Throat & voice box', ra: 'phar', rb: 'lar', force: 1, cam: { t: [0, 11, 0], d: 20, yaw: .45, pitch: .05 }, t: 'Air from the nose and mouth meets in the <b>pharynx</b> (throat). It then passes through the <b>larynx</b> (voice box), where the vocal cords make sound. A flap called the epiglottis covers the larynx when you swallow, so food goes down the food pipe instead.' },
+  { n: 'Trachea', s: 'Trachea', ra: 'lar', rb: 'carina', force: 1, cam: { t: [0, 7.6, 0], d: 20, yaw: .35, pitch: .05 }, zoom: 'cil', t: 'The <b>trachea</b> (windpipe) carries air towards the lungs. <b>Rings of cartilage</b> keep it open, like the rings in a vacuum-cleaner hose. Its lining is covered in sticky <b>mucus</b> and tiny hair-like <b>cilia</b>. Dust and germs stick to the mucus, and the cilia sweep it upwards to be swallowed or coughed out.' },
+  { n: 'Bronchi and bronchioles', s: 'Bronchi', ra: 'carina', rb: 'bl', force: 1, cam: { t: [0, 1.5, 0], d: 32, yaw: .1, pitch: .08 }, t: 'At the bottom the trachea divides into two <b>bronchi</b>, one for each lung. Inside the lungs they split again and again into thinner and thinner tubes called <b>bronchioles</b>, like the branches of an upside-down tree. This branching shares the air out to every part of the lungs.' },
+  { n: 'Alveoli', s: 'Alveoli', ra: 'bl', rb: null, force: 1, mic: true, cam: { t: [3.4, 2, 1.5], d: 31, yaw: .35, pitch: .2 }, t: 'Each tiny bronchiole ends in a cluster of <b>alveoli</b> (air sacs). Their walls are very thin and covered with <b>capillaries</b>. 🔵 <b>Oxygen</b> passes from the air in the alveolus into the blood. 🟠 <b>Carbon dioxide</b> passes from the blood into the alveolus. This is <b>gas exchange</b>.' },
+  { n: 'Exhalation', s: 'Breathing out', ra: null, rb: null, force: -1, cam: { t: [0, 4, 0], d: 42, yaw: .1, pitch: .08 }, t: 'When you breathe out, air flows back through the airways and leaves through the nose or mouth. It carries <b>carbon dioxide</b> out of the body. Exhaled air still contains <b>oxygen</b> too: the body uses only part of the oxygen you breathe in.' }
+];
+Stage.list.air = {
+  cam: AS[0].cam, i: 0, auto: true, tm: 0, dur: 11, zoom: null, over: false, min: 5,
+  enter() { this.i = 0; this.auto = true; this.zoom = null; this.over = false; UI.renderStageBar(); this.apply(); },
+  view() { const s = AS[this.i]; return s.mic ? 'mic' : (this.zoom || 'body'); },
+  apply() {
+    const s = AS[this.i], v = this.view(); setView(v); BR.hold = s.force > 0 ? 'in' : 'out'; AIR.force = s.force; AIR.ra = s.ra; AIR.rb = s.rb; BODY.setCut(true);
+    camGo(this.over ? WIDE : v === 'cil' ? { t: [0, 0, 0], d: 19, yaw: .3, pitch: .15 } : v === 'mic' ? s.cam : s.cam); this.tm = 0;
+  },
+  go(i) { this.i = clamp(i, 0, 5); this.zoom = null; this.over = false; this.apply(); UI.render(); UI.markBar(); },
+  update(dt) {
+    if (this.auto && !W.paused) { this.tm += dt; if (this.tm > this.dur) { if (this.i < 5) this.go(this.i + 1); else { this.auto = false; UI.render(); } } }
+    const e = $('#aBar'); if (e) e.style.width = (this.i + 1) / 6 * 100 + '%';
+  },
+  act(k, v) {
+    if (k === 'next') { this.auto = false; this.go(this.i + 1); } else if (k === 'prev') { this.auto = false; this.go(this.i - 1); }
+    else if (k === 'play') { this.auto = !this.auto; this.tm = this.dur * .6; UI.render(); }
+    else if (k === 'replay') { this.go(0); this.auto = true; UI.render(); }
+    else if (k === 'go') { this.auto = false; this.go(+v); }
+    else if (k === 'zoom') { this.zoom = this.zoom ? null : AS[this.i].zoom; this.over = false; this.apply(); UI.render(); }
+    else if (k === 'over') { this.over = !this.over; this.zoom = null; if (!AS[this.i].mic) { this.apply(); } UI.render(); }
+  },
+  bar() { return AS.map((s, i) => ({ ico: i + 1, n: s.s })); }, barOn(i) { return i === this.i; },
+  labelOn(key) { const v = this.view(); if (this.i === 5) return false; return v === 'cil' ? key === 'cil' : v === 'mic' ? key === 'mic' : key === 'air'; },
+  panel() {
+    const s = AS[this.i], leg = `<div class="box an"><b>Colour code:</b> <span style="color:#35d4ff">●</span> cyan = air breathed <b>in</b> · <span style="color:#ffa24a">●</span> orange = air breathed <b>out</b> (with carbon dioxide). The bright particles show the stage you are on; the faded ones show the rest of the journey.</div>`;
+    return `<div class="kick">Follow the Air · Stage ${this.i + 1} of 6</div><h3>${s.n}</h3><div class="prog" style="margin:4px 0 8px"><i id="aBar" style="width:${(this.i + 1) / 6 * 100}%"></i></div>
+    <p>${s.t}</p>
+    <div class="row">${btn('prev', '◀ Previous stage', 'sm', this.i === 0 ? 'disabled' : '')}${btn('play', this.auto ? '⏸ Pause' : '▶ Play', 'sm pri')}${btn('next', 'Next stage ▶', 'sm', this.i === 5 ? 'disabled' : '')}${btn('replay', '↺ Replay', 'sm')}</div>
+    <div class="row">${s.zoom ? btn('zoom', this.zoom ? '🧍 Back to the body' : '🔍 Zoom into the lining', 'sm') : ''}${btn('over', this.over ? '🔍 Follow the air' : '🌍 Return to overview', 'sm')}</div>
+    ${this.i === 2 && this.zoom ? '<div class="box fact"><b>Look closely:</b> the yellow hairs are <b>cilia</b>. The green layer is <b>mucus</b>. Brown dust sticks to the mucus and is moved upwards.</div>' : ''}${leg}`;
+  }
+};
+
+/* ---------- BREATHING SIMULATION ---------- */
+const RS = { rest: { n: 'Resting', rate: 14, amp: .65, d: 'normal', t: 'At rest the body needs a modest amount of oxygen, so breathing is slow and shallow.' }, walk: { n: 'Walking', rate: 20, amp: .85, d: 'a little deeper', t: 'Muscles are working harder, so they use more oxygen and make more carbon dioxide. Breathing becomes quicker and deeper.' }, run: { n: 'Running', rate: 34, amp: 1.15, d: 'much deeper', t: 'Active muscles need much more energy, so they need more oxygen delivered and more carbon dioxide removed. Breathing becomes much faster and deeper.' }, rec: { n: 'Recovering', rate: 14, amp: .65, d: 'returning to normal', t: 'After activity breathing does not return to normal instantly. It slows down gradually while the body catches up.' } };
+Stage.list.breath = {
+  cam: { t: [0, -1, 0], d: 40, yaw: .2, pitch: .1 }, tab: 'mech', side: false, tw: null, state: 'rest', tr: 0, rf: 14, ra: .65, ring: [], tm: 0, auto: true,
+  enter() { this.tab = 'mech'; this.side = false; this.tw = null; this.state = 'rest'; BODY.arrows.visible = true; BR.amp = .85; BODY.forceRibs = true; this.ring = []; this.auto = true; },
+  exit() { BODY.arrows.visible = false; },
+  update(dt, raw) {
+    if (BR.mode === 'manual' && this.tw !== null) { BR.manual += clamp(this.tw - BR.manual, -dt * .55, dt * .55); if (Math.abs(this.tw - BR.manual) < .01) this.tw = null; const s = $('#bm'); if (s) s.value = Math.round(BR.manual * 100); }
+    if (this.tab === 'rate') {
+      if (this.state === 'rec') { this.tr += dt; const x = Math.exp(-this.tr / 8); this.rt = 14 + (this.rfrom - 14) * x; this.at = .65 + (this.afrom - .65) * x; } else { this.rt = RS[this.state].rate; this.at = RS[this.state].amp; }
+      BR.rate += (this.rt - BR.rate) * Math.min(1, dt * .8); BR.amp += (this.at - BR.amp) * Math.min(1, dt * .8);
+      this.ring.push(BR.b * BR.amp); if (this.ring.length > 240) this.ring.shift();
+    }
+    this.tm += raw; if (this.tm > .1) { this.tm = 0; this.live(); }
+  },
+  live() {
+    const ph = BR.d > .04 ? 'in' : BR.d < -.04 ? 'out' : 'pause', e = $('#brState');
+    if (e) e.innerHTML = ph === 'in' ? '<b>Breathing in.</b> The diaphragm moves down and the ribs move up and out. The chest cavity gets <b>bigger</b>, so the pressure inside the lungs becomes <b>lower than the air outside</b>, and air flows <b>in</b>.' : ph === 'out' ? '<b>Breathing out.</b> The diaphragm relaxes and moves up and the ribs move back. The chest cavity gets <b>smaller</b>, so the pressure inside the lungs becomes <b>higher than the air outside</b>, and air flows <b>out</b>.' : '<b>A short pause</b> between breaths: the pressure inside the lungs is about the same as outside, so there is hardly any air flow.';
+    const r = $('#rtV'); if (r) { r.textContent = Math.round(BR.rate); const w = $('#vent'); if (w) w.style.width = clamp(BR.rate * BR.amp / 40 * 100, 6, 100) + '%'; this.draw(); }
+  },
+  draw() {
+    const c = $('#brC'); if (!c) return; const g = c.getContext('2d'), w = c.width, h = c.height; g.fillStyle = '#071230'; g.fillRect(0, 0, w, h); g.strokeStyle = '#35d4ff'; g.lineWidth = 2.5; g.beginPath(); const n = this.ring.length;
+    this.ring.forEach((v, i) => { const x = w - (n - i) * w / 240, y = h - 8 - v / 1.2 * (h - 16); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  },
+  act(k, v) {
+    if (k === 'tab') { this.tab = v; if (v === 'rate') { BR.mode = 'auto'; BR.manual = 0; BR.amp = .65; BR.rate = 14; this.state = 'rest'; } UI.render(); }
+    else if (k === 'auto') { BR.mode = 'auto'; UI.render(); } else if (k === 'manual') { BR.mode = 'manual'; BR.manual = BR.b; this.tw = null; UI.render(); }
+    else if (k === 'in') { BR.mode = 'manual'; this.tw = 1; UI.render(); } else if (k === 'out') { BR.mode = 'manual'; this.tw = 0; UI.render(); }
+    else if (k === 'view') { this.side = v === 'side'; camGo(this.side ? { t: [0, -1, 0], d: 36, yaw: 1.5, pitch: .05 } : this.cam); UI.render(); }
+    else if (k === 'st') { if (v === 'rec') { this.rfrom = BR.rate; this.afrom = BR.amp; this.tr = 0; } this.state = v; UI.render(); }
+    else if (k === 'reset') { this.state = 'rest'; BR.rate = 14; BR.amp = .65; UI.render(); }
+  },
+  input(k, v) { if (k === 'bm') { BR.mode = 'manual'; BR.manual = v / 100; this.tw = null; } },
+  labelOn(key) { return key === 'musc'; },
+  panel() {
+    const tabs = `<div class="tabs" role="tablist"><button role="tab" class="${this.tab === 'mech' ? 'on' : ''}" data-act="tab:mech">🎈 How breathing works</button><button role="tab" class="${this.tab === 'rate' ? 'on' : ''}" data-act="tab:rate">🏃 Why does breathing rate change?</button></div>`;
+    if (this.tab === 'rate') {
+      const B = RS[this.state];
+      return `<div class="kick">Breathing Simulation · Experiment</div>${tabs}<h3>${B.n}</h3><p>Choose a pretend activity and watch the lungs. You do <b>not</b> need to move or hold your breath. This is only a model.</p>
+      <div class="row">${['rest', 'walk', 'run', 'rec'].map(k => btn('st:' + k, RS[k].n, 'sm' + (this.state === k ? ' on' : ''))).join('')}${btn('reset', '↺ Reset', 'sm')}</div>
+      <div class="box" style="text-align:center"><div class="big" id="rtV">14</div><small>breaths per minute (illustrative)</small><div class="prog" style="margin-top:8px"><i id="vent" style="width:30%"></i></div><small>Air moved each minute: ${B.d} breaths</small></div>
+      <canvas id="brC" class="lab" width="300" height="80" style="width:100%;border-radius:10px" role="img" aria-label="Breathing trace: a wavy line that rises with each breath"></canvas>
+      <p>${B.t}</p>
+      <div class="box an"><b>Why?</b> Active muscles use more oxygen to release energy and produce more carbon dioxide. Breathing faster and deeper brings in more oxygen and removes more carbon dioxide.</div>
+      <div class="box nt"><b>Illustrative numbers only. </b>Real breathing rates vary with age, fitness, how hard you work and health. These are not measurements and cannot tell you anything about your own health. Never hold your breath or push yourself to test this.</div>`;
+    }
+    return `<div class="kick">Breathing Simulation</div>${tabs}<h3>Inhalation and exhalation</h3>
+    <div class="row">${btn('auto', '🔄 Automatic', 'sm' + (BR.mode === 'auto' ? ' on' : ''))}${btn('manual', '🖐 I control it', 'sm' + (BR.mode === 'manual' ? ' on' : ''))}${btn('in', '⬇ Breathe in', 'sm')}${btn('out', '⬆ Breathe out', 'sm')}</div>
+    ${BR.mode === 'manual' ? `<div class="ctl"><label for="bm">Chest size</label><input type="range" id="bm" data-in="bm" min="0" max="100" value="${Math.round(BR.manual * 100)}" aria-label="Chest size: small is exhale, large is inhale"></div>` : ''}
+    <div class="row">${btn('view:front', 'Front view', 'sm' + (!this.side ? ' on' : ''))}${btn('view:side', 'Side view', 'sm' + (this.side ? ' on' : ''))}</div>
+    <div class="box an" id="brState" aria-live="polite">…</div>
+    <p><small><span style="color:#ffa040">■</span> diaphragm movement · <span style="color:#ffe24a">■</span> rib movement · <span style="color:#35d4ff">■</span> airflow direction</small></p>
+    <table class="rt"><tr><th></th><th>Inhalation</th><th>Exhalation</th></tr><tr><td>Diaphragm</td><td>Contracts, moves <b>down</b></td><td>Relaxes, moves <b>up</b></td></tr><tr><td>Ribs</td><td>Move <b>up and out</b> (intercostal muscles contract)</td><td>Move back <b>down and in</b></td></tr><tr><td>Chest cavity</td><td>Bigger</td><td>Smaller</td></tr><tr><td>Pressure in lungs</td><td>Lower than outside</td><td>Higher than outside</td></tr><tr><td>Air flows</td><td><b>Into</b> the lungs</td><td><b>Out of</b> the lungs</td></tr><tr><td>Effort</td><td>Muscles work</td><td>Usually passive in quiet breathing</td></tr></table>
+    <div class="box nt"><b>Forceful breathing</b> (like blowing out candles or after a sprint) uses extra muscles, including the muscles of the abdomen, to push air out faster.</div>`;
+  }
+};
+
+/* =====================================================================
+   STAGES (part 2): alveoli, breathing vs cellular respiration, balloon lung, health
+   ===================================================================== */
+const MICF = {
+  alveoli: PARTS.alveoli, capillaries: PARTS.capillaries, bronchioles: PARTS.bronchioles,
+  rbc: { n: 'Red blood cell', job: 'Carries oxygen', t: 'Red blood cells flow through the capillaries in single file. They contain <b>haemoglobin</b>, a protein that <b>attaches to oxygen</b>. Most of the oxygen in blood is carried this way. In this model darker red cells have relatively less oxygen and brighter red cells have more.' }
+};
+Stage.list.alveoli = {
+  view: 'mic', cam: { t: [3.4, 2, 1.5], d: 31, yaw: .35, pitch: .2 }, sel: null, min: 6,
+  enter() { this.sel = null; BR.amp = .6; },
+  tap(pid) { this.sel = pid && MICF[pid] && pid !== this.sel ? pid : null; UI.render(); },
+  act(k, v) {
+    if (k === 'sel') this.tap(v); else if (k === 'gas') { MIC.show.gas = !MIC.show.gas; UI.render(); } else if (k === 'rbc') { MIC.show.rbc = !MIC.show.rbc; UI.render(); }
+    else if (k === 'slow') { MIC.slow = MIC.slow === 1 ? .3 : 1; UI.render(); } else if (k === 'one') camGo({ t: [3.2, 2, 2], d: 11, yaw: .3, pitch: .2 }); else if (k === 'all') camGo(this.cam);
+  },
+  labelOn(key) { return key === 'mic'; },
+  panel() {
+    const s = this.sel, F = s && MICF[s];
+    return `<div class="kick">Alveoli and Gas Exchange</div><h3>Inside the lungs, up close</h3>
+    <p>This is a <b>magnified</b> cluster of alveoli (air sacs) at the end of a bronchiole, wrapped in blood capillaries. <b>Tap a part</b> to learn about it.</p>
+    <div class="box"><b>Legend</b><br><span style="color:#3aa0ff;font-size:1.3em">●</span> <b>Oxygen</b> (blue ball) · <span style="color:#ffa23a;font-size:1.3em">◆</span> <b>Carbon dioxide</b> (orange diamond)<br><span style="color:#ff2f4a;font-size:1.3em">●</span> <b>Red blood cell</b> (darker = relatively less oxygen) · <span style="color:#e0485f;font-size:1.3em">━</span> capillary · <span style="color:#9fe8ff;font-size:1.3em">◯</span> alveolus wall</div>
+    <div class="row">${btn('gas', (MIC.show.gas ? '☑' : '☐') + ' Gases', 'sm' + (MIC.show.gas ? ' on' : ''))}${btn('rbc', (MIC.show.rbc ? '☑' : '☐') + ' Red blood cells', 'sm' + (MIC.show.rbc ? ' on' : ''))}${btn('slow', MIC.slow === 1 ? '🐢 Slow motion' : '⚡ Normal speed', 'sm')}${btn('one', '🔍 Zoom in', 'sm')}${btn('all', '⌖ All', 'sm')}</div>
+    <div class="row">${btn('sel:alveoli', 'Alveolus', 'sm' + (s === 'alveoli' ? ' on' : ''))}${btn('sel:capillaries', 'Capillary', 'sm' + (s === 'capillaries' ? ' on' : ''))}${btn('sel:rbc', 'Red blood cell', 'sm' + (s === 'rbc' ? ' on' : ''))}${btn('sel:bronchioles', 'Bronchiole', 'sm' + (s === 'bronchioles' ? ' on' : ''))}</div>
+    ${F ? `<div class="box fact"><b>${F.n}</b> <span class="pill">${F.job}</span><p style="margin:.4em 0">${F.t}</p></div>` : ''}
+    <div class="box an"><b>How does the exchange happen?</b> By <b>diffusion</b>. Gas particles move across a thin surface from a place where there are <b>more</b> of them to a place where there are <b>fewer</b>. The blood arriving at the alveolus has relatively little oxygen and plenty of carbon dioxide, while the air in the alveolus has more oxygen and less carbon dioxide. So <b>oxygen moves into the blood</b> and <b>carbon dioxide moves into the air</b>, then you breathe it out. <small>(Scientists describe this using differences in gas <i>pressure</i>, called partial pressures.)</small></div>
+    <div class="box fact"><b>Carrying the oxygen:</b> most oxygen is carried by <b>haemoglobin</b> inside red blood cells. The blood then travels to the heart, which pumps it around the body.</div>
+    <div class="box nt"><b>Careful: </b>the lungs do <b>not</b> turn carbon dioxide into oxygen. The two gases simply move in opposite directions. The picture is not to scale and shows only a few alveoli.</div>`;
+  }
+};
+
+/* ---------- BREATHING VS CELLULAR RESPIRATION ---------- */
+const SORT = [
+  ['Air moves into the lungs because the diaphragm moves down.', 'b'], ['Oxygen passes from the alveoli into the blood.', 'g'], ['Cells use oxygen to release energy from glucose.', 'c'], ['It happens in the mitochondria of body cells.', 'c'],
+  ['The ribs move up and out and the chest gets bigger.', 'b'], ['Carbon dioxide moves from the blood into the alveoli.', 'g'], ['It produces carbon dioxide and water as by-products.', 'c'], ['It happens across very thin walls next to capillaries.', 'g']
+];
+const SN = { b: 'Breathing', g: 'Gas exchange', c: 'Cellular respiration' };
+Stage.list.cell = {
+  view: 'cell', cam: { t: [0, 0, 0], d: 21, yaw: .25, pitch: .15 }, tab: 'c', sel: null, g: null, min: 6,
+  enter() { this.tab = 'c'; this.g = null; this.apply(); },
+  apply() { const v = { b: 'body', g: 'mic', c: 'cell', s: 'cell' }[this.tab]; setView(v); BR.amp = .75; camGo(v === 'body' ? FRONT : v === 'mic' ? { t: [3.4, 2, 1.5], d: 31, yaw: .35, pitch: .2 } : this.cam); BODY.setCut(true); },
+  labelOn(key) { return (this.tab === 'g' && key === 'mic') || ((this.tab === 'c' || this.tab === 's') && key === 'cellL') || (this.tab === 'b' && key === 'musc'); },
+  startSort() { this.g = { i: 0, s: 0, q: shuffle(SORT.map((_, i) => i)), ans: null }; },
+  act(k, v) {
+    if (k === 'tab') { this.tab = v; this.apply(); if (v === 's' && !this.g) this.startSort(); UI.render(); }
+    else if (k === 'a') { const g = this.g; if (g.ans) return; g.ans = v; if (v === SORT[g.q[g.i]][1]) g.s++; UI.render(); }
+    else if (k === 'nx') { this.g.i++; this.g.ans = null; if (this.g.i >= this.g.q.length) this.g.done = true; UI.render(); }
+    else if (k === 'again') { this.startSort(); UI.render(); }
+  },
+  panel() {
+    const T = (k, n) => `<button role="tab" class="${this.tab === k ? 'on' : ''}" data-act="tab:${k}">${n}</button>`;
+    const tabs = `<div class="tabs" role="tablist">${T('b', '1 Breathing')}${T('g', '2 Gas exchange')}${T('c', '3 Cellular respiration')}${T('s', '🎯 Sort')}</div>`;
+    let body = '';
+    if (this.tab === 'b') body = `<h3>1. Breathing (ventilation)</h3><p><b>Breathing</b> moves <b>air</b> into and out of the lungs. The diaphragm and rib muscles do the work. It is a <b>mechanical</b> process: nothing is being burned or made.</p><div class="box an"><b>Where:</b> chest and airways · <b>Result:</b> fresh air reaches the alveoli, and stale air leaves.</div>`;
+    else if (this.tab === 'g') body = `<h3>2. Gas exchange</h3><p>In the alveoli, <b>oxygen enters the blood</b> and <b>carbon dioxide leaves it</b>. This is movement of gases by diffusion across very thin walls.</p><div class="box an"><b>Where:</b> alveoli and capillaries · <b>Result:</b> blood gains oxygen and loses carbon dioxide.</div>`;
+    else if (this.tab === 'c') body = `<h3>3. Cellular respiration</h3><p>Inside the <b>cells</b> of your body, the <b>mitochondria</b> use <b>oxygen</b> to release <b>usable energy</b> from <b>nutrients</b> such as glucose. Carbon dioxide and water are made as by-products.</p>
+      <div class="box fact" style="text-align:center;font-size:1.05em"><b>Glucose + Oxygen → Carbon dioxide + Water + Released energy</b></div>
+      <p><small>🟡 glucose · 🔵 oxygen going in · 🟠 carbon dioxide and 🩵 water going out · ✨ energy released.</small></p>
+      <div class="box nt">This equation is a <b>simplified summary</b> of a long series of chemical reactions.</div>`;
+    else {
+      const g = this.g || (this.startSort(), this.g);
+      if (g.done) body = `<h3>Sorted! ${g.s} / ${g.q.length}</h3><p>${g.s >= 7 ? '🏆 Excellent! You can tell them apart.' : '🌟 Good effort. Remember: breathing moves air, gas exchange moves gases into and out of the blood, cellular respiration releases energy in cells.'}</p><div class="row">${btn('again', '🔁 Play again', 'pri')}</div>`;
+      else { const it = SORT[g.q[g.i]], ok = g.ans === it[1]; body = `<h3>Which process? (${g.i + 1}/${g.q.length}) ⭐ ${g.s}</h3><div class="box"><b>${it[0]}</b></div><div class="row">${['b', 'g', 'c'].map(k => btn('a:' + k, SN[k], 'pri' + (g.ans ? (k === it[1] ? ' ok' : k === g.ans ? ' no' : '') : ''), g.ans ? 'disabled' : '')).join('')}</div>${g.ans ? `<div class="fb ${ok ? 'ok' : 'no'}" aria-live="polite"><b>${ok ? 'Correct!' : 'Not quite.'}</b> That is <b>${SN[it[1]]}</b>.<div style="margin-top:8px">${btn('nx', g.i + 1 >= g.q.length ? 'See my result' : 'Next ▶', 'pri')}</div></div>` : ''}`; }
+    }
+    return `<div class="kick">Breathing vs Cellular Respiration</div>${tabs}${body}
+    <table class="rt"><tr><th></th><th>Breathing</th><th>Gas exchange</th><th>Cellular respiration</th></tr><tr><td>What moves/happens</td><td>Air in and out</td><td>O₂ into blood, CO₂ out</td><td>Energy released from glucose</td></tr><tr><td>Where</td><td>Chest, airways</td><td>Alveoli</td><td>Every body cell</td></tr></table>
+    <div class="box nt"><b>Connected, but not the same: </b>breathing and gas exchange bring oxygen in, blood delivers it, and cellular respiration uses it.</div>`;
+  }
+};
+
+/* ---------- BALLOON LUNG MODEL ---------- */
+const BGS = [['Rest', 'The rubber sheet (diaphragm) is in its resting position. The balloons (lungs) are a medium size. Inside the bottle (chest cavity) the air pressure is about the same as the air outside.', 50], ['Pull the sheet down', 'Pulling the sheet down makes the space inside the bottle <b>bigger</b>. The air inside has more room, so its pressure <b>falls</b>. Outside air, at higher pressure, rushes in through the tube and <b>inflates the balloons</b>. This is like breathing in.', 92], ['Push the sheet up', 'Pushing the sheet up makes the space inside the bottle <b>smaller</b>. The pressure inside rises above the outside, so air is pushed <b>out of the balloons</b> through the tube. This is like breathing out.', 12], ['Try it yourself', 'Move the slider or press the buttons to pull and push the sheet. Watch the balloons and the arrows.', 50]];
+Stage.list.balloon = {
+  view: 'bal', cam: { t: [0, 1.5, 0], d: 34, yaw: .25, pitch: .1 }, step: 0, min: 10,
+  enter() { this.step = 0; BAL.m = BAL.tgt = 50; },
+  labelOn(key) { return key === 'balL'; },
+  act(k, v) {
+    if (k === 'step') { this.step = +v; BAL.tgt = BGS[this.step][2]; UI.render(); } else if (k === 'down') BAL.tgt = clamp(BAL.tgt + 25, 0, 100); else if (k === 'up') BAL.tgt = clamp(BAL.tgt - 25, 0, 100); else if (k === 'reset') { this.step = 0; BAL.tgt = 50; UI.render(); }
+  },
+  input(k, v) { if (k === 'bmem') BAL.tgt = v; },
+  update(dt, raw) { this.tm = (this.tm || 0) + raw; if (this.tm > .12) { this.tm = 0; const e = $('#balS'); if (e) { const mv = BAL.mv, dv = BAL.vol; e.innerHTML = `Space in the bottle: <b>${dv > 12 ? 'bigger' : dv < -12 ? 'smaller' : 'normal'}</b> · Pressure inside: <b>${dv > 12 ? 'lower than outside' : dv < -12 ? 'higher than outside' : 'same as outside'}</b> · Air: <b>${mv > 0 ? 'flowing in ⬇' : mv < 0 ? 'flowing out ⬆' : 'still'}</b>`; } const m = $('#bmem'); if (m && document.activeElement !== m) m.value = Math.round(BAL.tgt); } },
+  panel() {
+    const st = BGS[this.step];
+    return `<div class="kick">Experiment · The Balloon Lung Model</div><h3>${st[0]}</h3>
+    <p>A bottle, a tube, two balloons and a rubber sheet make a model of the chest. <b>Bottle</b> = chest cavity · <b>Tube</b> = trachea and bronchi · <b>Balloons</b> = lungs · <b>Rubber sheet</b> = diaphragm.</p>
+    <div class="row">${BGS.map((b, i) => btn('step:' + i, (i + 1) + '. ' + b[0], 'sm' + (this.step === i ? ' on' : ''))).join('')}</div>
+    <div class="box an">${st[1]}</div>
+    <div class="ctl"><label for="bmem">Rubber sheet (up ⟷ down)</label><input type="range" id="bmem" data-in="bmem" min="0" max="100" value="${Math.round(BAL.tgt)}" aria-label="Move the rubber sheet up or down"></div>
+    <div class="row">${btn('down', '⬇ Pull down', 'sm')}${btn('up', '⬆ Push up', 'sm')}${btn('reset', '↺ Reset model', 'sm')}</div>
+    <div class="box" id="balS" aria-live="polite">…</div>
+    <div class="box nt"><b>A simple model: </b>it does <b>not</b> show the rib cage, the rib muscles, the pleural membranes, or the real lung tissue. In the body the diaphragm also moves down <i>and</i> the ribs lift. In the model the balloons are pulled open by the lower pressure around them, just like the lungs.</div>`;
+  }
+};
+
+/* ---------- RESPIRATORY HEALTH ---------- */
+const HT = [
+  { id: 'air', ico: '🌳', n: 'Why fresh air matters', view: 'body', t: 'Your cells need <b>oxygen</b> all the time, and you get it from the air. Fresh, clean air brings oxygen to the lungs without many harmful particles. Opening windows, cooking with good ventilation and spending time outdoors in clean air all help.', q: 'Where could you find the cleanest air near your home or school? What could make it cleaner?' },
+  { id: 'mucus', ico: '🧹', n: 'Mucus and cilia: the cleaning team', view: 'cil', t: 'The airways are lined with sticky <b>mucus</b> and tiny hair-like <b>cilia</b>. Dust, pollen and germs stick to the mucus. The cilia beat together and sweep it upwards, towards the throat, where it is swallowed or coughed out. Coughing and sneezing also clear the airways.', q: 'What do you think could happen if the cilia stopped working properly?' },
+  { id: 'smoke', ico: '🚭', n: 'Smoke and air pollution', view: 'cil', smoke: true, t: 'Smoke (from tobacco, burning rubbish or wood fires) and air pollution (like traffic fumes) contain tiny particles and harmful gases. They can <b>irritate</b> the airways, make you cough, and can <b>damage the cilia</b> so they sweep less well. Over many years, breathing smoke can seriously harm the lungs. Press the button to compare the lining with and without smoke.', q: 'What can people do to reduce the smoke and fumes around them?' },
+  { id: 'act', ico: '🏃', n: 'Physical activity and breathing', view: 'body', run: true, t: 'When you are active, your muscles need more oxygen, so you breathe <b>faster and deeper</b>. Being regularly active, in ways that suit you, helps keep the heart, lungs and breathing muscles working well. Stop and rest if you feel unwell.', q: 'How does your breathing feel after climbing stairs, and how long does it take to settle?' },
+  { id: 'inf', ico: '🤧', n: 'Respiratory infections', view: 'body', t: 'Germs such as viruses and bacteria can infect the airways. The lining may swell and make extra mucus, which can cause coughing and make breathing feel harder. Washing hands, covering coughs and sneezes, resting when you are ill, and staying away from others when sick all help. A doctor can tell what is wrong and how to help.', q: 'Why is it kind to cover your mouth when you cough or sneeze?' },
+  { id: 'help', ico: '🆘', n: 'When to ask for help', view: 'body', t: 'If a person is having <b>serious difficulty breathing</b>, for example struggling for breath, unable to speak in full sentences, or looking very pale or blue around the lips, tell a <b>trusted adult straight away</b> and get <b>medical help</b>. Do not try to treat it yourself. This app cannot diagnose or treat anyone.', q: 'Who are the adults you could ask for help quickly, at home and at school?' }
+];
+Stage.list.health = {
+  cam: FRONT, view: 'body', i: 0,
+  enter() { this.i = 0; this.apply(); },
+  apply() { const h = HT[this.i]; setView(h.view); CIL.smoke = !!h.smoke; BR.amp = h.run ? 1.15 : .7; BR.rate = h.run ? 30 : 14; camGo(h.view === 'cil' ? { t: [0, 0, 0], d: 19, yaw: .3, pitch: .15 } : { t: [0, 3, 0], d: 44, yaw: .15, pitch: .1 }); BODY.setCut(true); },
+  act(k, v) { if (k === 'topic') { this.i = +v; this.apply(); UI.render(); } else if (k === 'smoke') { CIL.smoke = !CIL.smoke; UI.render(); } },
+  labelOn(key) { return HT[this.i].view === 'cil' && key === 'cil'; },
+  panel() {
+    const h = HT[this.i];
+    return `<div class="kick">Respiratory Health and Everyday Life</div><h3>${h.ico} ${h.n}</h3>
+    <div class="row">${HT.map((t, i) => btn('topic:' + i, t.ico, 'sm' + (i === this.i ? ' on' : ''), `aria-label="${t.n}" title="${t.n}"`)).join('')}</div>
+    <p>${h.t}</p>
+    ${h.view === 'cil' ? `<div class="row">${btn('smoke', CIL.smoke ? '💨 Smoky air: cilia slowed' : '🌿 Clean air', 'sm' + (CIL.smoke ? ' on' : ''))}</div><p><small>Yellow hairs = cilia · green = mucus · brown dust ${CIL.smoke ? '· grey = smoke particles' : ''}</small></p>` : ''}
+    <div class="box an"><b>💭 Think about it:</b> ${h.q}</div>
+    <div class="box nt"><b>Note: </b>this is general learning information for students, not medical advice. For questions about your own health, talk to a doctor or another trusted adult.</div>`;
+  }
+};
+
+/* =====================================================================
+   UI: navigation, panel, modal
+   ===================================================================== */
+const NAV = [
+  ['title', '🏠', 'Home'], ['explore', '🫁', 'Explore the Body'], ['air', '💨', 'Follow the Air'], ['breath', '🎈', 'Breathing Simulation'], ['alveoli', '🔬', 'Alveoli & Gas Exchange'], ['cell', '🔋', 'Breathing vs Cellular Respiration'],
+  ['balloon', '🧪', 'Balloon Lung Model'], ['health', '🌿', 'Respiratory Health'], ['act', '🎯', 'Activities'], ['quiz', '❓', 'Quiz'], ['gloss', '📖', 'Glossary'], ['help', 'ℹ️', 'Help']
+];
+const MODALS = ['act', 'quiz', 'gloss', 'help'];
+const UI = {
+  panel: null,
+  setPanel(html, show) { const p = this.panel, sc = p.scrollTop, same = p.dataset.k === W.mode; p.innerHTML = '<button class="pmin" aria-label="Minimise or expand this panel">▾</button>' + html; p.dataset.k = W.mode; if (!same) p.classList.remove('min'); p.classList.toggle('show', show !== false); p.scrollTop = same ? sc : 0; this.bindPanel(); applyViewOffset(); },
+  bindPanel() {
+    const p = this.panel; $('.pmin', p).onclick = () => { p.classList.toggle('min'); applyViewOffset(); };
+    $$('[data-act]', p).forEach(b => b.onclick = () => this.act(b.dataset.act, b));
+    $$('[data-in]', p).forEach(b => b.oninput = () => this.input(b.dataset.in, +b.value, b));
+  },
+  render() {
+    const s = Stage.cur; if (!s) return; const h = s.panel ? s.panel() : '';
+    if (!h) { this.panel.classList.remove('show'); applyViewOffset(); } else this.setPanel(h);
+    if (s.afterRender) s.afterRender();
+  },
+  navMark(k) { $$('.nb').forEach(b => b.classList.toggle('on', b.dataset.k === k)); },
+  go(k) {
+    if (MODALS.includes(k)) { Modal.openKind(k); return; }
+    Modal.close(true);
+    if (NO3D.v) { $('#title').classList.toggle('gone', k !== 'title'); document.body.classList.toggle('is-title', k === 'title'); if (k !== 'title') { $('#top').style.visibility = 'visible'; this.setPanel('<h3>3D view not available</h3><p>Your device could not start the 3D scene. The <b>Activities</b>, <b>Quiz</b>, <b>Glossary</b> and <b>Help</b> sections still work from the menu below.</p>'); } return; }
+    const t = k === 'title';
+    $('#title').classList.toggle('gone', !t); document.body.classList.toggle('is-title', t); $('#top').style.visibility = t ? 'hidden' : 'visible';
+    $('#backBtn').style.display = t ? 'none' : 'inline-block'; document.body.classList.toggle('has-back', !t);
+    const sb = $('#stagebar'); sb.classList.remove('show'); document.documentElement.style.setProperty('--stageh', '0px'); this.panel.classList.remove('show');
+    Stage.enter(k); this.navMark(k); this.render();
+    this.renderStageBar();
+    if (t) this.panel.classList.remove('show');
+    applyViewOffset(); store.set('last', k);
+  },
+  renderStageBar() {
+    const sb = $('#stagebar'), s = Stage.cur; if (!s || !s.bar) { sb.classList.remove('show'); document.documentElement.style.setProperty('--stageh', '0px'); return; }
+    sb.innerHTML = `<div class="chips" role="tablist" aria-label="Stages">${s.bar().map((u, i) => `<button class="sc" role="tab" data-act="go:${i}" aria-label="Stage ${i + 1}: ${u.n}"><span>${u.ico}</span><span class="n">${u.n}</span></button>`).join('')}</div>`;
+    sb.classList.add('show'); $$('[data-act]', sb).forEach(b => b.onclick = () => this.act(b.dataset.act, b)); this.markBar();
+    requestAnimationFrame(() => { document.documentElement.style.setProperty('--stageh', (sb.offsetHeight + 12) + 'px'); applyViewOffset(); });
+  },
+  markBar() { const s = Stage.cur; $$('#stagebar .sc').forEach((b, k) => { b.classList.toggle('on', !!(s && s.barOn && s.barOn(k))); b.classList.toggle('done', !!(s && s.i > k)); if (s && s.barOn && s.barOn(k) && b.scrollIntoView) { const c = b.parentNode; c.scrollLeft = b.offsetLeft - c.clientWidth / 2 + b.clientWidth / 2; } }); },
+  act(a, el) {
+    const i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1), s = Stage.cur;
+    if (s && s.act) s.act(k, v, el);
+  },
+  input(k, v, el) { const s = Stage.cur; if (s && s.input) s.input(k, v, el); },
+  syncPause() { const b = $('#pauseBtn'); b.textContent = W.paused ? '▶' : '⏸'; b.classList.toggle('on', W.paused); b.setAttribute('aria-label', W.paused ? 'Resume animation' : 'Pause animation'); }
+};
+
+const Modal = {
+  el: null, raf: 0, kind: null,
+  open(title, html, kind) {
+    this.close(true); this.el = $('#modal'); this.kind = kind; W.modalOpen = true;
+    this.el.innerHTML = `<div class="sheet" role="document"><header><h2 id="mTitle">${title}</h2><button class="tb" id="mClose" aria-label="Close and go back">✕</button></header><div class="body" id="mBody">${html}</div></div>`;
+    this.el.classList.add('open'); this.el.setAttribute('aria-labelledby', 'mTitle');
+    $('#mClose').onclick = () => this.close(); this.el.onclick = e => { if (e.target === this.el) this.close(); };
+    $('#mClose').focus(); UI.navMark(kind); return $('#mBody');
+  },
+  close(silent) {
+    cancelAnimationFrame(this.raf); this.raf = 0; const m = $('#modal'); if (!m.classList.contains('open')) return;
+    m.classList.remove('open'); m.innerHTML = ''; W.modalOpen = false; this.kind = null;
+    if (!silent) { UI.navMark(W.mode); const c = $('#gl'); c && c.focus && c.focus({ preventScroll: true }); }
+  },
+  loop(fn) { let last = performance.now(); const f = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; fn(dt, now / 1000); this.raf = requestAnimationFrame(f); }; this.raf = requestAnimationFrame(f); },
+  openKind(k) { if (k === 'act') Acts.open(); else if (k === 'quiz') Quiz.open(); else if (k === 'gloss') Glossary.open(); else if (k === 'help') Help.open(); }
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (W.present) togglePresent(false); else if ($('#modal').classList.contains('open')) Modal.close(); else $('#settings').classList.remove('open'); }
+  if (e.key === 'Tab' && $('#modal').classList.contains('open')) {
+    const f = $$('#modal button,#modal input,#modal select,#modal summary,#modal [tabindex="0"]').filter(x => !x.disabled && x.offsetParent !== null); if (!f.length) return;
+    const a = f[0], b = f[f.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); } else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+  }
+});
+
+const PWA = {
+  ev: null, reg: null, standalone: false,
+  init() {
+    this.standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); this.ev = e; $('#installBtn').style.display = this.standalone ? 'none' : 'inline-block'; this.refresh(); });
+    window.addEventListener('appinstalled', () => { this.ev = null; this.standalone = true; $('#installBtn').style.display = 'none'; toast('The app was installed. You can open it from your home screen or app list.'); this.refresh(); });
+    $('#installBtn').onclick = () => this.install();
+    const net = () => { const on = navigator.onLine; const c = $('#netChip'); c.classList.toggle('off', !on); c.lastChild.textContent = on ? 'Online' : 'Offline – using saved files'; this.refresh(); }; window.addEventListener('online', net); window.addEventListener('offline', net); net();
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      navigator.serviceWorker.register('service-worker.js').then(r => {
+        this.reg = r; this.swState = 'registered';
+        const watch = w => w && w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) toast('A new version is ready.', 'Refresh', () => { w.postMessage('SKIP_WAITING'); }, 0); });
+        if (r.waiting && navigator.serviceWorker.controller) toast('A new version is ready.', 'Refresh', () => r.waiting.postMessage('SKIP_WAITING'), 0);
+        r.addEventListener('updatefound', () => watch(r.installing));
+        navigator.serviceWorker.ready.then(() => { this.swState = 'ready'; this.refresh(); });
+      }).catch(err => { this.swState = 'failed'; this.swErr = err && err.message; this.refresh(); });
+      let rl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (rl) return; rl = true; location.reload(); });
+    } else { this.swState = location.protocol === 'file:' ? 'file' : 'unsupported'; }
+  },
+  async install() {
+    if (this.ev) { this.ev.prompt(); const r = await this.ev.userChoice; if (r.outcome !== 'accepted') toast('Installation cancelled. You can try again any time.'); this.ev = null; $('#installBtn').style.display = 'none'; this.refresh(); }
+    else Help.open('install');
+  },
+  status() {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let inst, off;
+    if (this.standalone) inst = '✔ Installed – you are using the installed app.'; else if (this.ev) inst = '✔ Installation is available. Use the “Install App” button.';
+    else if (ios) inst = 'ℹ In Safari tap the Share button, then “Add to Home Screen”.'; else if (location.protocol === 'file:') inst = '✖ Not available when the file is opened directly (file://). Host it on HTTPS or use localhost.'; else inst = 'ℹ Not offered right now. Use your browser menu (“Install app” or “Add to Home screen”) if it appears there.';
+    off = this.swState === 'ready' ? '✔ Saved for offline use. The app will open without internet.' : this.swState === 'registered' ? '… Saving files for offline use…' : this.swState === 'failed' ? '✖ Offline saving failed: ' + esc(this.swErr || 'unknown error') : this.swState === 'file' ? '✖ Offline saving needs HTTPS or localhost (not file://).' : '✖ This browser or address does not support offline saving.';
+    return [inst, off];
+  },
+  refresh() { const e = $('#pwaStat'); if (e) { const s = this.status(); e.innerHTML = `<div class="box ${this.standalone || this.ev ? 'fact' : 'nt'}"><b>Install: </b>${s[0]}</div><div class="box ${this.swState === 'ready' ? 'fact' : 'nt'}"><b>Offline: </b>${s[1]}</div><div class="box"><b>Connection: </b>${navigator.onLine ? 'Online' : 'Offline'}</div>${this.ev ? '<button class="btn pri" id="hInst">⬇ Install App</button>' : ''}`; const b = $('#hInst'); if (b) b.onclick = () => this.install(); } }
+};
+
+const Help = {
+  open(focus) {
+    Modal.open('ℹ️ Help & About', `<div class="cols"><div>
+      <h3>How to use the app</h3>
+      <ul><li><b>Turn the view:</b> drag the 3D scene. <b>Zoom:</b> pinch, scroll, or use ＋ / － (arrow keys and + / − work when the 3D view is selected).</li><li><b>Learn about a part:</b> tap an organ, or choose it from the panel.</li><li><b>Reset camera:</b> ⌖. <b>Pause:</b> ⏸ or the Space key. <b>Labels:</b> 🏷. <b>Settings:</b> ⚙ (speed and graphics).</li><li><b>Presentation mode:</b> 📽 for teaching a class: bigger text and full screen. Press Esc to leave.</li><li><b>Panel too big?</b> Tap the ▾ in its corner to shrink it.</li></ul>
+      <h3>The menu</h3>
+      <ul><li><b>Explore the Body</b> – rotate, cutaway, fact cards.</li><li><b>Follow the Air</b> – a 6-stage journey from the nose to the alveoli and back.</li><li><b>Breathing Simulation</b> – the diaphragm and ribs, and why breathing rate changes.</li><li><b>Alveoli &amp; Gas Exchange</b> – oxygen and carbon dioxide up close.</li><li><b>Breathing vs Cellular Respiration</b>, <b>Balloon Lung Model</b> and <b>Respiratory Health</b>.</li><li><b>Activities</b>, <b>Quiz</b> and <b>Glossary</b>.</li></ul>
+      <div class="box nt"><b>About accuracy: </b>The model is simplified for learning. It is not to scale, it shows far fewer airways and alveoli than a real lung, and breathing is slowed down so you can watch. The numbers for breathing rate are illustrative only. This app is not medical advice and cannot diagnose anything.</div>
+      <div class="box">If the 3D view does not start, your device may not support WebGL. Try <b>Low graphics</b> in ⚙ or a newer browser. Activities, Quiz and Glossary still work. The app works without sound.</div></div>
+      <div><h3>Install &amp; offline</h3><div id="pwaStat"></div>
+      <div class="box"><b>To use offline:</b> put the folder on an HTTPS website (or run it on localhost), open it once while online, and it keeps working without internet. Service workers only run on <b>HTTPS</b> or <b>localhost</b>. On Android Chrome: menu ⋮ → “Install app”. On iPhone/iPad Safari: Share → “Add to Home Screen”.</div>
+      <h3>Credits</h3><div class="box fact">Developed by <b>Mateen Yousuf, Teacher</b>.<br>Built with Three.js (included, so no internet is needed). No accounts, no tracking, no backend.</div>
+      <div class="row"><button class="btn" id="hReset">Clear saved progress</button></div></div></div>`, 'help');
+    PWA.refresh(); $('#hReset').onclick = () => { try { Object.keys(localStorage).filter(k => k.startsWith('rs_')).forEach(k => localStorage.removeItem(k)); } catch (e) { } Acts.done = {}; toast('Saved progress cleared.'); };
+    if (focus === 'install') $('#pwaStat').scrollIntoView();
+  }
+};
+
+/* =====================================================================
+   ACTIVITIES A–D
+   ===================================================================== */
+const ARR = [
+  ['Nose or mouth', 'Air enters the body through the nose or the mouth. This is the start of the pathway.'],
+  ['Pharynx', 'Air from the nose and mouth meets in the pharynx (throat).'],
+  ['Larynx', 'Below the pharynx is the larynx (voice box), at the top of the trachea.'],
+  ['Trachea', 'The trachea (windpipe) carries air down towards the lungs.'],
+  ['Bronchi', 'The trachea divides into two bronchi, one going into each lung.'],
+  ['Bronchioles', 'Inside the lungs the bronchi branch into many thin bronchioles.'],
+  ['Alveoli', 'The bronchioles end in clusters of tiny air sacs called alveoli, where gas exchange happens.']
+];
+const OXS = [
+  ['Oxygen is in the air around you. Where does it enter your body?', ['Through the nose or mouth', 'Through the ears', 'Through the skin of the hands'], 0, 'Air enters through the nose or the mouth and starts its journey down the airways.'],
+  ['The air moves through the throat and voice box. Which tube then carries it towards the lungs?', ['The food pipe', 'The trachea (windpipe)', 'The bronchioles'], 1, 'The trachea carries air towards the lungs. The food pipe is a different tube that carries food to the stomach.'],
+  ['The trachea splits into two. What are the two main branches called?', ['Bronchi', 'Capillaries', 'Alveoli'], 0, 'The two main branches are the bronchi, one for each lung.'],
+  ['The bronchi branch many times into very thin airways. What are they called?', ['Arteries', 'Bronchioles', 'Ribs'], 1, 'These small airways are called bronchioles. They carry air deep into the lungs.'],
+  ['The bronchioles end in tiny air sacs. What are the air sacs called?', ['Alveoli', 'Tonsils', 'Valves'], 0, 'Alveoli are tiny air sacs. Their thin walls make gas exchange possible.'],
+  ['How does oxygen get from the alveolus into the blood?', ['It passes across the very thin wall by diffusion', 'The lungs turn it into carbon dioxide first', 'It is pumped across by the ribs'], 0, 'Oxygen moves across the thin alveolus and capillary walls from where there is more of it (the air) to where there is less (the blood). The lungs do not change one gas into another.'],
+  ['Now the oxygen is in the blood. What carries most of it?', ['Haemoglobin inside red blood cells', 'Platelets', 'The cilia'], 0, 'Haemoglobin, a protein inside red blood cells, attaches to oxygen and carries most of it.'],
+  ['Where does the oxygen-rich blood go next?', ['Back out through the nose', 'To the heart, which pumps it around the body', 'Into the stomach'], 1, 'The blood returns to the heart, which pumps it to all parts of the body.'],
+  ['What do body cells do with the oxygen?', ['Use it to release energy from nutrients (cellular respiration)', 'Turn it into water to drink', 'Breathe it out as it is'], 0, 'Cells use oxygen to release usable energy from glucose. Carbon dioxide and water are made as by-products.']
+];
+const Acts = {
+  done: store.get('acts', {}),
+  mark(k, t, score) { const o = this.done[k]; if (!o || score > (o.s || 0)) { this.done[k] = { t, s: score }; store.set('acts', this.done); } },
+  open() {
+    const L = [['A', '🌬', 'Arrange the Air Pathway', 'Put the structures in order, from the nose or mouth to the alveoli.'], ['B', '🫁', 'Inhale or Exhale?', 'Watch an animated chest and decide which phase of breathing it is.'], ['C', '🔵', 'Follow the Oxygen', 'Guide oxygen from the air into the blood and on to the cells.'], ['D', '❓', 'Respiratory System Quiz', 'Test yourself with 15 questions.']];
+    const b = Modal.open('🎯 Activities', `<p>Choose an activity. Your best results are saved on this device.</p><div class="cards">${L.map(a => `<div class="card click" tabindex="0" role="button" data-a="${a[0]}"><h4>${a[1]} ${a[0]}. ${a[2]}</h4><p>${a[3]}</p>${this.done[a[0]] ? `<span class="pill">Best: ${esc(this.done[a[0]].t)}</span>` : ''}</div>`).join('')}</div>`, 'act');
+    $$('.card', b).forEach(c => { const go = () => this['run' + c.dataset.a](); c.onclick = go; c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
+  },
+  back() { return `<button class="btn" id="aBack">◀ All activities</button>`; },
+  /* ---- A ---- */
+  runA() { this.A = { next: 0, mist: 0, pool: shuffle(ARR.map((_, i) => i)), placed: [], msg: '' }; this.stepA(); },
+  stepA() {
+    const a = this.A, fin = a.next >= ARR.length; if (fin) this.mark('A', a.mist + ' mistakes', 100 - a.mist);
+    const tr = a.placed.map(i => `<li><b>${ARR[i][0]}</b> <small>${ARR[i][1]}</small></li>`).join('');
+    const b = Modal.open('🌬 Arrange the Air Pathway', `<p>Air is about to enter the body. <b>Tap the next structure</b> that the air passes through. Mistakes so far: <b>${a.mist}</b></p>
+      <ol class="seq" style="text-align:left">${tr || '<li><small>Your pathway will appear here…</small></li>'}</ol><div id="aMsg" aria-live="polite">${a.msg}</div>
+      ${fin ? `<div style="text-align:center"><div style="font-size:60px">${a.mist === 0 ? '🏆' : a.mist < 4 ? '🌟' : '🌬'}</div><h3>Pathway complete – ${a.mist} mistake${a.mist === 1 ? '' : 's'}</h3><p>Gas exchange then happens between the alveoli and the blood.</p><div class="row" style="justify-content:center"><button class="btn pri" id="aAgain">🔁 Play again</button>${this.back()}</div></div>`
+        : `<div class="row">${a.pool.filter(i => !a.placed.includes(i)).map(i => `<button class="btn" data-i="${i}">${esc(ARR[i][0])}</button>`).join('')}</div>`}`, 'act');
+    if (fin) { $('#aAgain').onclick = () => this.runA(); $('#aBack').onclick = () => this.open(); return; }
+    $$('[data-i]', b).forEach(bt => bt.onclick = () => {
+      const i = +bt.dataset.i;
+      if (i === a.next) { a.placed.push(i); a.next++; a.msg = `<div class="fb ok"><b>Correct!</b> ${ARR[i][1]}</div>`; }
+      else { a.mist++; a.msg = `<div class="fb no"><b>Not yet.</b> “${esc(ARR[i][0])}” does not come next. After <b>${a.next ? ARR[a.next - 1][0] : 'entering the body'}</b> the air goes to the <b>${ARR[a.next][0]}</b>. ${ARR[a.next][1]}</div>`; }
+      this.stepA();
+    });
+  },
+  /* ---- B: animated torso ---- */
+  runB() { this.B = { i: 0, s: 0, n: 8, order: shuffle(['in', 'out', 'in', 'out', 'in', 'out', 'in', 'out'].slice(0, 8)) }; this.stepB(); },
+  torso(b) {
+    const rx = 70 + 16 * b, lx = 26 + 8 * b, ly = 52 + 10 * b, dy = 168 + 30 * b;
+    return `<svg viewBox="0 0 240 250" style="width:100%;max-width:300px" role="img" aria-label="Animated chest: watch the diaphragm, the ribs and the lungs"><rect x="30" y="20" width="180" height="215" rx="60" fill="#0b2a55" stroke="#5fd0ff" stroke-opacity=".5"/>
+    <ellipse cx="120" cy="100" rx="${rx}" ry="78" fill="none" stroke="#f3ead4" stroke-width="5" stroke-dasharray="14 7"/>
+    <ellipse cx="${120 - 36}" cy="${105 + (ly - 52) * .3}" rx="${lx + 6}" ry="${ly}" fill="#ff8fa8" fill-opacity=".8"/><ellipse cx="${120 + 36}" cy="${105 + (ly - 52) * .3}" rx="${lx}" ry="${ly - 3}" fill="#ff8fa8" fill-opacity=".8"/>
+    <path d="M38 215 Q120 ${dy * 2 - 215} 202 215 Z" fill="#e9955a" fill-opacity=".9"/><rect x="113" y="6" width="14" height="70" rx="6" fill="#ffc7b8"/>
+    <text x="120" y="238" text-anchor="middle" font-size="11" fill="#bfe6ff">diaphragm (orange) · ribs (dashed) · lungs (pink)</text></svg>`;
+  },
+  stepB() {
+    const a = this.B;
+    if (a.i >= a.n) { this.mark('B', a.s + '/' + a.n, a.s); Modal.open('🫁 Inhale or Exhale?', `<div style="text-align:center"><div style="font-size:64px">${a.s >= 7 ? '🏆' : a.s >= 5 ? '🌟' : '🌱'}</div><h3>You scored ${a.s} / ${a.n}</h3><p>Clues for <b>inhaling</b>: diaphragm moves down, ribs move up and out, chest gets bigger, air flows in. Clues for <b>exhaling</b>: the opposite.</p><div class="row" style="justify-content:center"><button class="btn pri" id="aAgain">🔁 Play again</button>${this.back()}</div></div>`, 'act'); $('#aAgain').onclick = () => this.runB(); $('#aBack').onclick = () => this.open(); return; }
+    const ph = a.order[a.i];
+    const b = Modal.open('🫁 Inhale or Exhale?', `<div class="lh" style="justify-content:space-between"><span class="pill">Round ${a.i + 1} of ${a.n}</span><span class="pill">⭐ ${a.s}</span></div><h3>Watch the diaphragm, the ribs and the lungs. Is this person breathing in or out?</h3><div id="tor" style="text-align:center"></div>
+      <div class="row" style="justify-content:center"><button class="btn pri" data-p="in">⬇ Inhale (breathe in)</button><button class="btn pri" data-p="out">⬆ Exhale (breathe out)</button></div><div id="aFb" aria-live="polite"></div>`, 'act');
+    const tor = $('#tor'); let t0 = performance.now();
+    Modal.loop((dt, now) => { const t = ((performance.now() - t0) / 1000) % 3.6; let x = t < 2.4 ? sstep(0, 2.4, t) : 1; if (ph === 'out') x = 1 - x; tor.innerHTML = this.torso(x); });
+    $$('[data-p]', b).forEach(bt => bt.onclick = () => {
+      const ok = bt.dataset.p === ph; if (ok) a.s++; $$('[data-p]', b).forEach(x => x.disabled = true);
+      $('#aFb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><b>${ok ? 'Correct!' : 'Not quite.'}</b> This is <b>${ph === 'in' ? 'inhalation' : 'exhalation'}</b>: the diaphragm moves <b>${ph === 'in' ? 'down' : 'up'}</b>, the ribs move ${ph === 'in' ? 'up and out' : 'down and in'}, the chest cavity gets ${ph === 'in' ? 'bigger' : 'smaller'} and air flows <b>${ph === 'in' ? 'into' : 'out of'}</b> the lungs.<div style="margin-top:8px"><button class="btn pri" id="aNx">${a.i + 1 >= a.n ? 'See my score' : 'Next ▶'}</button></div></div>`; $('#aNx').onclick = () => { a.i++; this.stepB(); }; $('#aNx').focus();
+    });
+  },
+  /* ---- C: follow the oxygen ---- */
+  runC() { this.C = { i: 0, s: 0, hist: [] }; this.stepC(); },
+  stepC() {
+    const a = this.C;
+    if (a.i >= OXS.length) { this.mark('C', a.s + '/' + OXS.length, a.s); Modal.open('🔵 Follow the Oxygen', `<div style="text-align:center"><div style="font-size:64px">🔵➜🔴</div><h3>The oxygen reached the cells! ${a.s} / ${OXS.length} first tries</h3><p>Air → nose or mouth → trachea → bronchi → bronchioles → alveoli → across the thin wall into the capillary → haemoglobin in red blood cells → heart → body cells, where it is used in cellular respiration.</p><div class="row" style="justify-content:center"><button class="btn pri" id="aAgain">🔁 Play again</button>${this.back()}</div></div>`, 'act'); $('#aAgain').onclick = () => this.runC(); $('#aBack').onclick = () => this.open(); return; }
+    const q = OXS[a.i], opts = shuffle(q[1].map((t, k) => [t, k]));
+    const b = Modal.open('🔵 Follow the Oxygen', `<div class="lh" style="justify-content:space-between"><span class="pill">Step ${a.i + 1} of ${OXS.length}</span><span class="pill">⭐ ${a.s}</span></div><div class="prog" style="margin:6px 0"><i style="width:${a.i / OXS.length * 100}%"></i></div>
+      <ol class="seq" style="text-align:left;font-size:.9em">${a.hist.map(h => `<li>${h}</li>`).join('') || '<li><small>The oxygen’s path will appear here…</small></li>'}</ol><h3>${q[0]}</h3>
+      <div>${opts.map(o => `<button class="opt" data-k="${o[1]}">${o[0]}</button>`).join('')}</div><div id="aFb" aria-live="polite"></div>`, 'act');
+    let tried = false; $$('.opt', b).forEach(bt => bt.onclick = () => { const ok = +bt.dataset.k === q[2];
+      if (ok) { $$('.opt', b).forEach(y => { y.disabled = true; if (+y.dataset.k === q[2]) y.classList.add('ok'); }); if (!tried) a.s++; a.hist.push(q[1][q[2]]); $('#aFb').innerHTML = `<div class="fb ok"><b>Correct!</b> ${q[3]}<div style="margin-top:8px"><button class="btn pri" id="aNx">${a.i + 1 >= OXS.length ? 'Finish' : 'Next step ▶'}</button></div></div>`; $('#aNx').onclick = () => { a.i++; this.stepC(); }; $('#aNx').focus(); }
+      else { tried = true; bt.disabled = true; bt.classList.add('no'); $('#aFb').innerHTML = `<div class="fb no"><b>Not quite – try another one.</b> Think about where the oxygen has got to so far.</div>`; } });
+  },
+  runD() { Quiz.open(); }
+};
+
+const QUIZ = [
+  { q: 'Which organs are the main organs of gas exchange?', o: ['The lungs', 'The stomach', 'The kidneys', 'The liver'], a: 0, e: 'The lungs, and especially the alveoli inside them, are where oxygen enters the blood and carbon dioxide leaves it.' },
+  { q: 'Which route can air take into the body?', o: ['Only through the nose', 'Only through the mouth', 'Through the nose or the mouth', 'Through the ears'], a: 2, e: 'Air can enter through the nose or the mouth.' },
+  { q: 'What does the nose do to the air we breathe in?', o: ['Filters, warms and moistens it', 'Turns it into oxygen', 'Cools it to freezing', 'Stores it for later'], a: 0, e: 'Nasal hairs and mucus trap dust, and the air is warmed and moistened.' },
+  { q: 'What is the correct order of the air pathway?', o: ['Trachea → pharynx → larynx → alveoli', 'Pharynx → larynx → trachea → bronchi → bronchioles → alveoli', 'Alveoli → bronchioles → trachea', 'Larynx → pharynx → bronchi'], a: 1, e: 'After the nose or mouth, air passes through the pharynx, larynx, trachea, bronchi and bronchioles to the alveoli.' },
+  { q: 'What are the rings in the trachea wall made of?', o: ['Bone', 'Cartilage', 'Skin', 'Muscle'], a: 1, e: 'Rings of cartilage keep the trachea open so air can always pass.' },
+  { q: 'What do cilia and mucus do in the airways?', o: ['Make sounds', 'Trap particles and sweep them out', 'Pump blood', 'Store oxygen'], a: 1, e: 'Mucus traps dust and germs, and the cilia sweep it upwards so it can be swallowed or coughed out.' },
+  { q: 'Into how many main bronchi does the trachea divide?', o: ['One', 'Two', 'Three', 'Five'], a: 1, e: 'The trachea divides into two main bronchi, one for each lung.' },
+  { q: 'What are the smallest branching airways called?', o: ['Bronchioles', 'Arteries', 'Tonsils', 'Ribs'], a: 0, e: 'Bronchioles are the thin airways that end at the alveoli.' },
+  { q: 'What are alveoli?', o: ['Rib muscles', 'Tiny air sacs where gas exchange happens', 'Parts of the larynx', 'Blood cells'], a: 1, e: 'Alveoli are tiny air sacs with very thin walls, surrounded by capillaries.' },
+  { q: 'What happens to the diaphragm when you breathe in?', o: ['It relaxes and moves up', 'It contracts and moves down', 'It stays still', 'It turns into a lung'], a: 1, e: 'During inhalation the diaphragm contracts and moves down, making the chest cavity bigger.' },
+  { q: 'What happens to the chest cavity when you breathe in?', o: ['It gets bigger', 'It gets smaller', 'It stays the same', 'It disappears'], a: 0, e: 'The diaphragm moves down and the ribs move up and out, so the chest cavity gets bigger.' },
+  { q: 'Why does air flow into the lungs when the chest cavity gets bigger?', o: ['The pressure in the lungs becomes lower than the air outside', 'The pressure in the lungs becomes higher than outside', 'The air is pulled in by the heart', 'Oxygen is made inside the lungs'], a: 0, e: 'A bigger chest lowers the pressure inside the lungs, so higher-pressure outside air flows in.' },
+  { q: 'How does quiet exhalation usually happen?', o: ['Mostly as the breathing muscles relax', 'By very strong muscles pushing hard', 'By the heart pumping air out', 'It never happens'], a: 0, e: 'In quiet breathing, the diaphragm and rib muscles relax and the chest gets smaller, so air flows out. Forceful breathing uses extra muscles.' },
+  { q: 'In the alveoli, which way does oxygen move?', o: ['From the air into the blood', 'From the blood into the air', 'It does not move', 'It turns into carbon dioxide'], a: 0, e: 'Oxygen moves from the air in the alveoli into the blood in the capillaries.' },
+  { q: 'In the alveoli, which way does carbon dioxide move?', o: ['From the air into the blood', 'From the blood into the air in the alveoli', 'It stays in the blood forever', 'It turns into oxygen'], a: 1, e: 'Carbon dioxide moves from the blood into the alveoli and is breathed out.' },
+  { q: 'Do the lungs change carbon dioxide into oxygen?', o: ['Yes, that is their main job', 'No – the gases simply move in opposite directions', 'Yes, but only when running', 'Only the left lung does'], a: 1, e: 'The lungs do not convert one gas into another. Oxygen moves into the blood and carbon dioxide moves out.' },
+  { q: 'What moves gases across the thin alveolar wall?', o: ['Diffusion', 'Cilia', 'Cartilage', 'Digestion'], a: 0, e: 'Gas particles move by diffusion from where there is more of them to where there is less.' },
+  { q: 'What carries most of the oxygen in the blood?', o: ['Haemoglobin in red blood cells', 'Platelets', 'The ribs', 'Mucus'], a: 0, e: 'Haemoglobin, a protein inside red blood cells, attaches to oxygen and carries it.' },
+  { q: 'Which statement about breathing and cellular respiration is correct?', o: ['They are exactly the same thing', 'Breathing moves air; cellular respiration releases energy inside cells', 'Cellular respiration happens only in the lungs', 'Breathing happens in the mitochondria'], a: 1, e: 'Breathing moves air into and out of the lungs. Cellular respiration happens in the cells and releases energy using oxygen.' },
+  { q: 'Which is the simplified equation for cellular respiration?', o: ['Glucose + Oxygen → Carbon dioxide + Water + Energy', 'Carbon dioxide + Water → Glucose + Oxygen', 'Oxygen → Carbon dioxide', 'Water + Energy → Oxygen'], a: 0, e: 'Cells use glucose and oxygen and release energy, with carbon dioxide and water as by-products.' },
+  { q: 'Does exhaled air still contain oxygen?', o: ['No, it is all used up', 'Yes, the body uses only part of the oxygen we breathe in', 'Only after running', 'Only in the morning'], a: 1, e: 'Exhaled air still contains a good amount of oxygen as well as extra carbon dioxide.' },
+  { q: 'Why does your breathing rate increase when you run?', o: ['Active muscles need more oxygen and make more carbon dioxide', 'The lungs get smaller', 'The nose gets blocked', 'The diaphragm stops'], a: 0, e: 'Working muscles use more oxygen and produce more carbon dioxide, so breathing becomes faster and deeper.' },
+  { q: 'Which of these can harm the respiratory system?', o: ['Smoke and air pollution', 'Fresh clean air', 'Regular activity', 'Drinking water'], a: 0, e: 'Smoke and pollution can irritate the airways and damage cilia and lung tissue.' },
+  { q: 'What should you do if someone has serious difficulty breathing?', o: ['Wait and see', 'Tell a trusted adult and get medical help straight away', 'Ask them to run', 'Give them any medicine'], a: 1, e: 'Serious breathing difficulty needs adult and medical help immediately.' }
+];
+const Quiz = {
+  qs: [], i: 0, score: 0, wrong: [],
+  open() { this.start(shuffle(QUIZ.map((_, k) => k)).slice(0, 15)); },
+  start(idx) { this.qs = idx; this.i = 0; this.score = 0; this.wrong = []; Modal.open('❓ Respiratory System Quiz', '<div id="qHost"></div>', 'quiz'); this.render(); },
+  render() {
+    const host = $('#qHost'); if (!host) return; if (this.i >= this.qs.length) return this.result(host);
+    const q = QUIZ[this.qs[this.i]], opts = shuffle(q.o.map((t, k) => [t, k]));
+    host.innerHTML = `<div class="lh" style="justify-content:space-between"><span class="pill">Question ${this.i + 1} of ${this.qs.length}</span><span class="pill">⭐ Score ${this.score}</span></div><div class="prog" style="margin:8px 0 14px" role="progressbar" aria-valuemin="0" aria-valuemax="${this.qs.length}" aria-valuenow="${this.i}"><i style="width:${this.i / this.qs.length * 100}%"></i></div>
+      <h3 style="font-size:23px;margin:.2em 0 .6em">${q.q}</h3><div>${opts.map(o => `<button class="opt" data-k="${o[1]}">${o[0]}</button>`).join('')}</div><div id="fb" aria-live="polite"></div>`;
+    $$('.opt', host).forEach(bt => bt.onclick = () => {
+      const ok = +bt.dataset.k === q.a; $$('.opt', host).forEach(y => { y.disabled = true; if (+y.dataset.k === q.a) y.classList.add('ok'); }); if (ok) this.score++; else { bt.classList.add('no'); this.wrong.push(this.qs[this.i]); }
+      $('#fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><b>${ok ? ['Correct!', 'Well done!', 'Spot on!', 'Brilliant!'][this.i % 4] : ['Nice try!', 'Not quite – keep going!', 'Good effort!'][this.i % 3]}</b> ${q.e} <div style="margin-top:8px"><button class="btn pri" id="qn">${this.i + 1 >= this.qs.length ? 'See my result' : 'Next ▶'}</button></div></div>`; $('#qn').onclick = () => { this.i++; this.render(); }; $('#qn').focus();
+    });
+  },
+  result(host) {
+    const n = this.qs.length, pct = this.score / n, best = Math.max(store.get('best', 0), this.score); store.set('best', best);
+    const msg = pct >= .9 ? ['🏆', 'Breathing Champion!'] : pct >= .7 ? ['🌟', 'Great work, Respiratory Scientist!'] : pct >= .45 ? ['🫁', 'Good job – you are getting there!'] : ['🌱', 'A good start – every scientist learns by trying. Try again!'];
+    host.innerHTML = `<div style="text-align:center"><div style="font-size:70px">${msg[0]}</div><h3 style="font-size:26px;margin:.1em 0">${msg[1]}</h3><div class="big">${this.score} / ${n}</div><p>Best score on this device: <b>${best}</b></p>
+      <div class="prog" style="height:12px"><i style="width:${pct * 100}%"></i></div>
+      ${this.wrong.length ? `<details class="qa" style="text-align:left"><summary>Review the ones to remember (${this.wrong.length})</summary>${this.wrong.map(k => `<div class="box"><b>${QUIZ[k].q}</b><br>✔ ${QUIZ[k].o[QUIZ[k].a]}<br><small>${QUIZ[k].e}</small></div>`).join('')}</details>` : '<p>Perfect – no mistakes!</p>'}
+      <div class="row" style="justify-content:center"><button class="btn pri" id="qRetry">🔁 Retry same questions</button><button class="btn" id="qAgain">🎲 Play again (new mix)</button><button class="btn" id="qHome">🫁 Back to the body</button></div></div>`;
+    $('#qRetry').onclick = () => this.start(this.qs.slice()); $('#qAgain').onclick = () => this.open(); $('#qHome').onclick = () => { Modal.close(); UI.go('explore'); };
+  }
+};
+const GLOSS = [
+  ['Respiratory system', 'The organs that bring oxygen into the body and remove carbon dioxide.'], ['Breathing (ventilation)', 'Moving air into and out of the lungs.'], ['Inhale', 'To breathe in. The diaphragm moves down and the ribs move up and out.'], ['Exhale', 'To breathe out. In quiet breathing the muscles relax and air flows out.'],
+  ['Nasal cavity', 'The space inside the nose where air is filtered, warmed and moistened.'], ['Pharynx', 'The throat. Air and food both pass through it.'], ['Larynx', 'The voice box. It holds the vocal cords.'], ['Epiglottis', 'A flap that covers the larynx when you swallow.'],
+  ['Trachea', 'The windpipe, a tube with cartilage rings that carries air to the bronchi.'], ['Bronchus (plural: bronchi)', 'One of the two main airways that go from the trachea into the lungs.'], ['Bronchiole', 'A very small airway that ends in alveoli.'], ['Alveolus (plural: alveoli)', 'A tiny air sac in the lungs where gas exchange takes place.'],
+  ['Lung', 'A soft, spongy organ used for breathing. We have a right and a left lung.'], ['Diaphragm', 'A dome-shaped muscle under the lungs that is the main muscle of breathing.'], ['Rib cage', 'The bones that protect the lungs and heart.'], ['Intercostal muscles', 'Small muscles between the ribs that move the ribs when we breathe.'],
+  ['Mucus', 'A sticky fluid that traps dust and germs in the airways.'], ['Cilia', 'Tiny hair-like structures that sweep mucus and trapped particles out of the airways.'], ['Cartilage', 'A firm but flexible tissue. It forms the rings of the trachea.'],
+  ['Capillary', 'A tiny blood vessel with a very thin wall. Capillaries surround the alveoli.'], ['Gas exchange', 'Oxygen moving into the blood and carbon dioxide moving out, in the alveoli.'], ['Diffusion', 'The movement of particles from where there are more of them to where there are fewer.'],
+  ['Oxygen', 'A gas in the air that our cells need to release energy.'], ['Carbon dioxide', 'A waste gas made by cells and breathed out.'], ['Haemoglobin', 'A protein in red blood cells that attaches to oxygen.'], ['Red blood cell', 'A blood cell that carries oxygen.'],
+  ['Cellular respiration', 'The process in body cells that uses oxygen to release energy from nutrients such as glucose.'], ['Mitochondrion (plural: mitochondria)', 'A part of a cell where most of the energy is released from nutrients.'], ['Glucose', 'A simple sugar that cells use as fuel.'],
+  ['Pressure', 'How strongly gas pushes on its surroundings. Air flows from higher pressure to lower pressure.'], ['Breathing rate', 'How many breaths you take in one minute. It changes with activity, age and fitness.'], ['Pollution', 'Harmful substances in the air, water or soil.'], ['Infection', 'When germs get into the body and cause illness.']
+];
+const Glossary = {
+  open() {
+    const b = Modal.open('📖 Glossary', `<div class="ctl"><label for="gq">Search the glossary</label><input id="gq" type="search" placeholder="Type a word…" style="width:100%;padding:11px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:#fff;font-size:16px"></div><div id="glList" class="cards"></div>`, 'gloss');
+    const draw = q => { $('#glList').innerHTML = GLOSS.filter(g => (g[0] + ' ' + g[1]).toLowerCase().includes(q.toLowerCase())).map(g => `<div class="card"><h4>${g[0]}</h4><p>${g[1]}</p></div>`).join('') || '<p>No matching words.</p>'; };
+    draw(''); $('#gq').oninput = e => draw(e.target.value);
+  }
+};
+
+/* =====================================================================
+   BOOT, MAIN LOOP, CONTROLS
+   ===================================================================== */
+function togglePresent(on) {
+  W.present = on === undefined ? !W.present : on; document.body.classList.toggle('present', W.present); const de = document.documentElement;
+  if (W.present) { W.paused = false; UI.syncPause(); $('#settings').classList.remove('open'); try { de.requestFullscreen && de.requestFullscreen().catch(() => { }); } catch (e) { } toast('Presentation mode: bigger text for the class. Press Esc to exit.'); }
+  else { try { document.fullscreenElement && document.exitFullscreen().catch(() => { }); } catch (e) { } }
+  applyViewOffset();
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && W.present) { W.present = false; document.body.classList.remove('present'); applyViewOffset(); } });
+function resetCamera() { if (CAM.preset) { camGo(CAM.preset); CAM.auto = W.mode === 'title';  } }
+function tick() {
+  requestAnimationFrame(tick);
+  const raw = Math.min(clock.getDelta(), .05), dt = W.paused ? 0 : raw * W.speed;
+  if (document.hidden || W.modalOpen) return;
+  try { T += dt; Stage.update(dt, raw); camUpdate(raw); updateLabels(); bgPts.rotation.y += raw * .01; renderer.render(scene, camera); }
+  catch (e) { if (!tick.err) { tick.err = 1; console.error(e); toast('Something went wrong with the 3D view. Try reloading the page.', null, null, 7000); } }
+  if (!tick.first) { tick.first = 1; setTimeout(() => $('#loader').classList.add('hide'), 250); }
+}
+function boot() {
+  const lowDev = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;
+  W.gfx = store.get('gfx', lowDev ? 'low' : 'high'); UI.panel = $('#panel');
+  $('#nav').innerHTML = NAV.map(n => `<button class="nb" data-k="${n[0]}" aria-label="${n[2]}"><span class="i" aria-hidden="true">${n[1]}</span>${n[2]}</button>`).join('');
+  $$('.nb').forEach(b => b.onclick = () => UI.go(b.dataset.k));
+  try { initWorld(); buildBody(); buildMic(); buildCil(); buildCell(); buildBal(); [BODY.pk, MIC.pk, CIL.pk, CELL.pk, BAL.pk].forEach(a => a.forEach(m => PICK.push(m))); setView('body'); addExtraLabels(); initStages(); } catch (e) { console.error(e); NO3D.v = true; document.body.classList.add('no3d'); $('#loader').classList.add('hide'); toast('3D graphics are not available on this device. Activities, the quiz and the glossary still work.', null, null, 8000); }
+  PWA.init();
+  $('#startBtn').onclick = () => UI.go('explore'); $('#backBtn').onclick = () => UI.go('title');
+  $('#pauseBtn').onclick = () => { W.paused = !W.paused; UI.syncPause(); }; $('#resetCam').onclick = resetCamera;
+  $('#zoomIn').onclick = () => zoomBy(.8); $('#zoomOut').onclick = () => zoomBy(1.25);
+  $('#lblBtn').onclick = e => { W.labels = !W.labels; e.currentTarget.classList.toggle('on', !W.labels); toast(W.labels ? 'Labels shown' : 'Labels hidden', null, null, 1400); };
+  $('#presBtn').onclick = () => togglePresent(); $('#exitP').onclick = () => togglePresent(false); $('#setBtn').onclick = () => $('#settings').classList.toggle('open');
+  $('#spd').oninput = e => { W.speed = +e.target.value; $('#spdv').textContent = W.speed.toFixed(1) + '×'; };
+  $$('#gfxSeg button').forEach(b => { b.classList.toggle('on', b.dataset.g === W.gfx); b.onclick = () => { $$('#gfxSeg button').forEach(x => x.classList.toggle('on', x === b)); W.gfx = b.dataset.g; store.set('gfx', W.gfx); resize(); toast(W.gfx === 'low' ? 'Reduced graphics on: faster on older devices. Restart a stage to apply fully.' : 'High graphics on.', null, null, 2200); }; });
+  document.addEventListener('pointerdown', e => { const s = $('#settings'); if (s.classList.contains('open') && !s.contains(e.target) && e.target.id !== 'setBtn') s.classList.remove('open'); });
+  document.addEventListener('keydown', e => {
+    const tg = e.target.tagName; if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || W.modalOpen) return;
+    if (e.key === ' ' && tg !== 'BUTTON') { e.preventDefault(); $('#pauseBtn').click(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && clock) clock.getDelta(); });
+  UI.syncPause(); $('#top').style.visibility = 'hidden'; document.body.classList.add('is-title');
+  if (!NO3D.v) { UI.go('title'); tick(); } else { $('#title').classList.remove('gone'); }
+}
+window.addEventListener('error', e => { if (e && e.message && !/ResizeObserver/.test(e.message)) console.error('App error:', e.message); });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+
+</script>
+</body>
+</html>
